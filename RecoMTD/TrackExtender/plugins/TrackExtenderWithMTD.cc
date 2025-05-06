@@ -1,4 +1,4 @@
-#define EDM_ML_DEBUG
+//#define EDM_ML_DEBUG
 #include <sstream>
 
 #include <CLHEP/Units/GlobalPhysicalConstants.h>
@@ -59,9 +59,9 @@ namespace {
       hit = nullptr;
       estChi2 = std::numeric_limits<float>::max();
       timeChi2 = std::numeric_limits<float>::max();
-      D0Significance = std::numeric_limits<float>::max();
-      D0Error = std::numeric_limits<float>::max();
+      isTrackFromPV = false;
     }
+
 
     //Operator used to sort the hits while performing the matching step at the MTD
     inline bool operator<(const MTDHitMatchingInfo& m2) const {
@@ -69,20 +69,16 @@ namespace {
       constexpr float chi2_cut = 10.f;
       constexpr float low_weight = 3.f;
       constexpr float high_weight = 8.f;
-      constexpr float maxD0Significance = 4.f; //4
-      constexpr float maxD0Error = 1.f; //1
 
       // if the track is not associated with PV, do not use time chi2 for ordering, eg weight = 0
-      if (D0Significance > maxD0Significance  || D0Error > maxD0Error ) {
-	return chi2(0.) < m2.chi2(0.);
-      }
-      else {// if track associated with PV, decide to use low or high weight for chi2 time
-        if (timeChi2 < chi2_cut && m2.timeChi2 < chi2_cut){
+      if (!m2.isTrackFromPV) {
+        return chi2(0.) < m2.chi2(0.);
+      } else {  // if track associated with PV, decide to use low or high weight for chi2 time
+        if (timeChi2 < chi2_cut && m2.timeChi2 < chi2_cut) {
           return chi2(low_weight) < m2.chi2(low_weight);
-	}
-        else {
+        } else {
           return chi2(high_weight) < m2.chi2(high_weight);
-	}
+        }
       }
     }
 
@@ -91,8 +87,7 @@ namespace {
     const MTDTrackingRecHit* hit;
     float estChi2;
     float timeChi2;
-    float D0Significance;
-    float D0Error;
+    bool isTrackFromPV;
   };
 
   class TrackSegments {
@@ -861,14 +856,15 @@ void TrackExtenderWithMTDT<TrackCollection>::produce(edm::Event& ev, const edm::
     }
 
     reco::TransientTrack ttrack(track, magfield.product(), gtg_);
-//    std::cout << "ttrack sign, error : " 
-//	      << ttrack.stateAtBeamLine().transverseImpactParameter().significance() 
-//	      << " , "
-//	      << ttrack.stateAtBeamLine().transverseImpactParameter().error() 
-//	      << std::endl;
-    if (ttrack.stateAtBeamLine().transverseImpactParameter().significance() > 4. || ttrack.stateAtBeamLine().transverseImpactParameter().error() > 1.){
-       noPVtrackCounter = noPVtrackCounter + 1;	    
-//       std::cout << "NO PV track number: " << noPVtrackCounter << std::endl;
+    //    std::cout << "ttrack sign, error : "
+    //	      << ttrack.stateAtBeamLine().transverseImpactParameter().significance()
+    //	      << " , "
+    //	      << ttrack.stateAtBeamLine().transverseImpactParameter().error()
+    //	      << std::endl;
+    if (ttrack.stateAtBeamLine().transverseImpactParameter().significance() > 4. ||
+        ttrack.stateAtBeamLine().transverseImpactParameter().error() > 1.) {
+      noPVtrackCounter = noPVtrackCounter + 1;
+      //       std::cout << "NO PV track number: " << noPVtrackCounter << std::endl;
     }
     auto thits = theTransformer->getTransientRecHits(ttrack);
     TransientTrackingRecHit::ConstRecHitContainer mtdthits;
@@ -887,7 +883,7 @@ void TrackExtenderWithMTDT<TrackCollection>::produce(edm::Event& ev, const edm::
         trackPathLength(trajs, tscbl, prop, pathlength0, trs0);
 
         const auto& btlhits = tryBTLLayers(tsos,
-			                   ttrack,
+                                           ttrack,
                                            trajs,
                                            pmag2,
                                            pathlength0,
@@ -905,7 +901,7 @@ void TrackExtenderWithMTDT<TrackCollection>::produce(edm::Event& ev, const edm::
         // in the future this should include an intermediate refit before propagating to the ETL
         // for now it is ok
         const auto& etlhits = tryETLLayers(tsos,
-			                   ttrack,
+                                           ttrack,
                                            trajs,
                                            pmag2,
                                            pathlength0,
@@ -1102,6 +1098,44 @@ void TrackExtenderWithMTDT<TrackCollection>::produce(edm::Event& ev, const edm::
 }
 
 namespace {
+
+  bool isTrackFromPV(const reco::TransientTrack& tk) { // copied from TrackFilterForPVFinding
+    if (!tk.stateAtBeamLine().isValid())
+      return false;
+    
+    constexpr float maxD0Sig_ = 4.f;  
+    constexpr float maxD0Error_ = 1.f;  
+    constexpr float maxDzError_ = 1.f;  
+    constexpr float minPt_ = 0.f;  
+    constexpr float maxEta_ = 4.f;  
+    constexpr float maxNormChi2_ = 10.f;
+    constexpr int minPxLayers_ = 2;
+    constexpr int minSiLayers_ = 5;
+    constexpr int minStripHits_ = 0;  
+    std::string qualityClass = "any";
+    reco::TrackBase::TrackQuality quality_;
+
+    if (qualityClass == "any" || qualityClass == "Any" || qualityClass == "ANY" || qualityClass.empty()) {
+      quality_ = reco::TrackBase::undefQuality;
+    } else {
+      quality_ = reco::TrackBase::qualityByName(qualityClass);
+    }
+  
+    bool IPSigCut = (tk.stateAtBeamLine().transverseImpactParameter().significance() < maxD0Sig_) &&
+                    (tk.stateAtBeamLine().transverseImpactParameter().error() < maxD0Error_) &&
+                    (tk.track().dzError() < maxDzError_);
+    bool pTCut = tk.impactPointState().globalMomentum().transverse() > minPt_;
+    bool etaCut = std::fabs(tk.impactPointState().globalMomentum().eta()) < maxEta_;
+    bool normChi2Cut = tk.normalizedChi2() < maxNormChi2_;
+    bool nPxLayCut = tk.hitPattern().pixelLayersWithMeasurement() >= minPxLayers_;
+    bool nSiLayCut = tk.hitPattern().trackerLayersWithMeasurement() >= minSiLayers_;
+    bool trackQualityCut = (quality_ == reco::TrackBase::undefQuality) || tk.track().quality(quality_);
+    bool nStripHitsCut = tk.hitPattern().numberOfValidStripHits() >= minStripHits_;
+  
+  
+    return IPSigCut && pTCut && etaCut && normChi2Cut && nPxLayCut && nSiLayCut && trackQualityCut && nStripHitsCut;
+  }
+	
   bool cmp_for_detset(const unsigned one, const unsigned two) { return one < two; };
 
   void find_hits_in_dets(const MTDTrackingDetSetVector& hits,
@@ -1181,29 +1215,25 @@ namespace {
               mi.hit = &hit;
               mi.estChi2 = est.second;
               mi.timeChi2 = tof.dtchi2_best;  //use the chi2 for the best matching hypothesis
-              mi.D0Significance = ttrack.stateAtBeamLine().transverseImpactParameter().significance();
-	      mi.D0Error =  ttrack.stateAtBeamLine().transverseImpactParameter().error();  	      
+              mi.isTrackFromPV = isTrackFromPV(ttrack);
               //std::cout << "Creating the MTDHitMatchingInfo: "
-	      //          << "  space chi2: "
-	      //          << est.second 
-	      //          << "  time chi2: "
-	      //          << tof.dtchi2_best
-	      //          << "  significance: "
-	      //          << ttrack.stateAtBeamLine().transverseImpactParameter().significance()
-	      //          << "  error: "
-	      //          << ttrack.stateAtBeamLine().transverseImpactParameter().error()	
-	      //  	<< " "
-	      //  	<< std::endl;
+              //          << "  space chi2: "
+              //          << est.second
+              //          << "  time chi2: "
+              //          << tof.dtchi2_best
+              //          << "  is PV ?: "
+              //          << isTrackFromPV(ttrack)
+              //  	<< std::endl;
               out.insert(mi);
-	      //std::cout << "My set contains: ";
-	      //for (auto iti=out.begin(); iti!=out.end(); ++iti){
+              //std::cout << "My set contains: ";
+              //for (auto iti=out.begin(); iti!=out.end(); ++iti){
               //          std::cout << "  space chi2: "
-	      //          << iti->estChi2
-	      //          << "  time chi2: "
-	      //          << iti->timeChi2
-	      //  	<< std::endl;
-	      //}
-	      //std::cout << '\n';
+              //          << iti->estChi2
+              //          << "  time chi2: "
+              //          << iti->timeChi2
+              //  	<< std::endl;
+              //}
+              //std::cout << '\n';
             }
           }
         }
@@ -1236,7 +1266,8 @@ TransientTrackingRecHit::ConstRecHitContainer TrackExtenderWithMTDT<TrackCollect
     LogTrace("TrackExtenderWithMTD") << "Hit search: BTL layer at R= "
                                      << static_cast<const BarrelDetLayer*>(ilay)->specificSurface().radius();
 
-    fillMatchingHits(ilay, tsos, ttrack, traj, pmag2, pathlength0, trs0, hits, prop, bs, vtxTime, matchVertex, output, bestHit);
+    fillMatchingHits(
+        ilay, tsos, ttrack, traj, pmag2, pathlength0, trs0, hits, prop, bs, vtxTime, matchVertex, output, bestHit);
   }
 
   return output;
@@ -1271,7 +1302,8 @@ TransientTrackingRecHit::ConstRecHitContainer TrackExtenderWithMTDT<TrackCollect
 
     LogTrace("TrackExtenderWithMTD") << "Hit search: ETL disk at Z = " << diskZ;
 
-    fillMatchingHits(ilay, tsos, ttrack, traj, pmag2, pathlength0, trs0, hits, prop, bs, vtxTime, matchVertex, output, bestHit);
+    fillMatchingHits(
+        ilay, tsos, ttrack, traj, pmag2, pathlength0, trs0, hits, prop, bs, vtxTime, matchVertex, output, bestHit);
   }
 
   // the ETL hits order must be from the innermost to the outermost
@@ -1305,7 +1337,7 @@ void TrackExtenderWithMTDT<TrackCollection>::fillMatchingHits(const DetLayer* il
   using namespace std::placeholders;
   auto find_hits = std::bind(find_hits_in_dets,
                              std::cref(hits),
-			     std::cref(ttrack),
+                             std::cref(ttrack),
                              std::cref(traj),
                              ilay,
                              std::cref(tsos),
@@ -1639,6 +1671,9 @@ string TrackExtenderWithMTDT<TrackCollection>::dumpLayer(const DetLayer* layer) 
   }
   return output.str();
 }
+
+
+
 
 //define this as a plug-in
 #include <FWCore/Framework/interface/MakerMacros.h>
