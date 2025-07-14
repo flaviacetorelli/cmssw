@@ -1,0 +1,5 @@
+#include "DataFormats/Common/interface/Wrapper.h"
+#include "DataFormats/HeterogeneousTutorial/interface/BTLUncalibRecHitHostCollection.h"
+#include "DataFormats/HeterogeneousTutorial/interface/BTLUncalibRecHitSoA.h"
+#include "DataFormats/HeterogeneousTutorial/interface/BTLRecHitHostCollection.h"
+#include "DataFormats/HeterogeneousTutorial/interface/BTLRecHitSoA.h"

@@ -1,0 +1,6 @@
+#include "DataFormats/HeterogeneousTutorial/interface/BTLUncalibRecHitHostCollection.h"
+#include "DataFormats/HeterogeneousTutorial/interface/BTLRecHitHostCollection.h"
+#include "DataFormats/Portable/interface/PortableHostCollectionReadRules.h"
+
+SET_PORTABLEHOSTCOLLECTION_READ_RULES(btlrechit::BTLUncalibRecHitHostCollection);
+SET_PORTABLEHOSTCOLLECTION_READ_RULES(btlrechit::BTLRecHitHostCollection);
