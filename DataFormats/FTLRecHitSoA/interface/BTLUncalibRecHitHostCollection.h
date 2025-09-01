@@ -1,13 +1,13 @@
-#ifndef DataFormats_FTLRecHitSoA_interface_BTLUncalibRechHitHostCollection_h
-#define DataFormats_FTLRecHitSoA_interface_BTLUncalibRechHitHostCollection_h
+#ifndef DataFormats_FTLRecHitSoA_interface_BTLUncalibRecHitHostCollection_h
+#define DataFormats_FTLRecHitSoA_interface_BTLUncalibRecHitHostCollection_h
 
-#include "DataFormats/FTLRecHitSoA/interface/BTLUncalibRechHitSoA.h"
+#include "DataFormats/FTLRecHitSoA/interface/BTLUncalibRecHitSoA.h"
 #include "DataFormats/Portable/interface/PortableHostCollection.h"
 
 namespace btlrechit {
   
-  using BTLUncalibRecHitHostCollection = PortableHostCollection<BTLUncalibRechHitSoA>;
+  using BTLUncalibRecHitHostCollection = PortableHostCollection<BTLUncalibRecHitSoA>;
 
 } // namespace btluncalibrechit
 
-#endif  // DataFormats_FTLRecHitSoA_interface_BTLUncalibRechHitHostCollection_h
+#endif  // DataFormats_FTLRecHitSoA_interface_BTLUncalibRecHitHostCollection_h

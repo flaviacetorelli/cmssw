@@ -1,6 +1,6 @@
-</export>
 <use name="fmt"/>
 <use name="rootcore"/>
+<use name="DataFormats/Common"/>
 <use name="DataFormats/Portable"/>
 <use name="DataFormats/SoATemplate"/>
 <use name="HeterogeneousCore/AlpakaInterface"/>
