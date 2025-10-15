@@ -40,6 +40,10 @@ mtdUncalibratedRecHits = cms.EDProducer(
     EndcapHitsName = cms.string('FTLEndcap')
 )
 
+mtdUncalibratedRecHitsSoA = cms.EDProducer('btlrechit::BTLUncalibRecHitSoAProducer@alpaka',
+    digi = cms.InputTag("mix", "FTLBarrelSoA"))
+
+
 from Configuration.ProcessModifiers.premix_stage2_cff import premix_stage2
 premix_stage2.toModify(mtdUncalibratedRecHits,
     barrelDigis = 'mixData:FTLBarrel',
