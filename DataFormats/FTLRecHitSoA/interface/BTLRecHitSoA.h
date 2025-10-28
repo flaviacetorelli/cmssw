@@ -14,7 +14,7 @@ namespace btlrechit {
                         SOA_COLUMN(float, position),
                         SOA_COLUMN(float, time1_error),
                         SOA_COLUMN(float, position_error),
-                        SOA_COLUMN(unsigned char, flags))
+                        SOA_COLUMN(uint8_t, flags))
 
     using BTLRecHitSoA = BTLRecHitSoALayout<>;
     using BTLRecHitSoAView = BTLRecHitSoA::View;

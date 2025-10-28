@@ -1,5 +1,5 @@
 #include <ostream>
-
+#include <bitset>
 #include <fmt/format.h>
 
 #include "DataFormats/FTLRecHitSoA/interface/BTLRecHitSoA.h"
@@ -16,7 +16,7 @@ namespace btlrechit {
         << ", position:	" << btlrh.position()
         << ", time1 error : " << btlrh.time1_error()
         << ", position error:	" << btlrh.position_error()
-	<< ", flags: " << btlrh.flags();
+	<< ", flags: " << std::bitset<8>(btlrh.flags());
     return out;
   }
 
