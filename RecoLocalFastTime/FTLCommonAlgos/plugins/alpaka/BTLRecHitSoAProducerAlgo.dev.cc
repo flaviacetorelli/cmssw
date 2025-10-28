@@ -56,7 +56,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         if (entry.time1L() > 0) {
 	  
           energyL = entry.ampL() * adcLSB_;
-          time1L = entry.time1R() - (timeCorr_p0_ * pow(entry.ampR(), timeCorr_p1_) + timeCorr_p2_);
+          time1L = entry.time1L() - (timeCorr_p0_ * pow(entry.ampR(), timeCorr_p1_) + timeCorr_p2_);
         
           flag |= (0x1 << 1);
         }
@@ -65,7 +65,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 	
 	if (time1L > 0 && time1R > 0){
           time1 = 0.5f *( time1L + time1R );
-	  time2 = 0.5f*( entry.time2L() + entry.time2R() ); // to be discussed
+	  time2 = 0.5f *( entry.time2L() + entry.time2R() ); // to be discussed
 	  position = 0.5f * c_LYSO_ * (time1L - time1R); 
           position_error = 0.; //to be implemented
 	  energy = (energyL + energyR )/2; 
