@@ -28,7 +28,8 @@ private:
 
   // ----------member data ---------------------------
 
-  //edm::EDGetTokenT<FTLRecHitCollection> tok_BTL_reco;
+  edm::EDGetTokenT<FTLUncalibratedRecHitCollection> tok_BTL_uncreco;
+  edm::EDGetTokenT<FTLRecHitCollection> tok_BTL_reco;
   edm::EDGetTokenT<btlrechit::BTLUncalibRecHitHostCollection> tok_BTL_uncreco_SoA;
   edm::EDGetTokenT<btlrechit::BTLRecHitHostCollection> tok_BTL_reco_SoA;
 };
@@ -36,7 +37,8 @@ private:
 BTLRecoSoADump::BTLRecoSoADump(const edm::ParameterSet& iConfig)
 
 {
-  //tok_BTL_reco = consumes<FTLRecHitCollection>(edm::InputTag("mtdRecHits", "FTLBarrel"));	
+  tok_BTL_uncreco = consumes<FTLUncalibratedRecHitCollection>(edm::InputTag("mtdUncalibratedRecHits", "FTLBarrel"));	
+  tok_BTL_reco = consumes<FTLRecHitCollection>(edm::InputTag("mtdRecHits", "FTLBarrel"));	
   tok_BTL_uncreco_SoA = consumes<btlrechit::BTLUncalibRecHitHostCollection>(edm::InputTag("mtdUncalibratedRecHitsSoA"));	
   tok_BTL_reco_SoA = consumes<btlrechit::BTLRecHitHostCollection>(edm::InputTag("mtdRecHitsSoA"));	
 }
@@ -51,8 +53,11 @@ BTLRecoSoADump::~BTLRecoSoADump() {}
 void BTLRecoSoADump::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
   using namespace std;
 
-  //edm::Handle<FTLRecHitCollection> h_BTL_reco;
-  //iEvent.getByToken(tok_BTL_reco, h_BTL_reco);
+  edm::Handle<FTLUncalibratedRecHitCollection> h_BTL_uncreco;
+  iEvent.getByToken(tok_BTL_uncreco, h_BTL_uncreco);
+
+  edm::Handle<FTLRecHitCollection> h_BTL_reco;
+  iEvent.getByToken(tok_BTL_reco, h_BTL_reco);
 
   edm::Handle<btlrechit::BTLUncalibRecHitHostCollection> h_BTL_uncreco_SoA;
   iEvent.getByToken(tok_BTL_uncreco_SoA, h_BTL_uncreco_SoA);
@@ -60,41 +65,58 @@ void BTLRecoSoADump::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   edm::Handle<btlrechit::BTLRecHitHostCollection> h_BTL_reco_SoA;
   iEvent.getByToken(tok_BTL_reco_SoA, h_BTL_reco_SoA);
 
+  // --- BTL Uncalib  RECOs:
+  std::cout << " ----------------------------------------" << std::endl;
+  if (!h_BTL_uncreco->empty()) {
+    std::cout << " BTL Uncalib RECO collection:" << std::endl;
 
+    for (const auto& recHit : *h_BTL_uncreco) {
+      MTDDetId mtdDetId(recHit.id());
+      // --- detector element ID:
+      std::cout << "   det ID:  det = " << mtdDetId.det() << "  subdet = " << mtdDetId.mtdSubDetector()
+                << "  rawID = " << mtdDetId.rawId() << std::endl;
 
-  // --- BTL RECOs:
+      std::cout << "  amplitude = " << recHit.amplitude().first << "  time = " << recHit.time().first
+                << "  amplitude = " << recHit.amplitude().second << "  time = " << recHit.time().second
+	        << "  position = " << recHit.position()
+                << "  time error = " << recHit.timeError() << std::endl;
 
-  //if (!h_BTL_reco->empty()) {
-  //  std::cout << " ----------------------------------------" << std::endl;
-  //  std::cout << " BTL RECO collection:" << std::endl;
+    }  // recHit loop
 
-  //  for (const auto& recHit : *h_BTL_reco) {
-  //    MTDDetId mtdDetId(recHit.id());
-
-  //    // --- detector element ID:
-  //    std::cout << "   det ID:  det = " << mtdDetId.det() << "  subdet = " << mtdDetId.mtdSubDetector()
-  //              << "  rawID = " << mtdDetId.rawId() << std::endl;
-
-  //    std::cout << "       energy = " << recHit.energy() << "  time = " << recHit.time()
-  //              << "  time error = " << recHit.timeError() << std::endl;
-
-  //  }  // recHit loop
-
-  //}  // if ( h_BTL_reco->size() > 0 )
+   } 
 
   if (h_BTL_uncreco_SoA->view().metadata().size() > 0) {
-    std::cout << " ----------------------------------------" << std::endl;
     std::cout << " BTL Uncalib RECO SoA collection: " << h_BTL_uncreco_SoA->view().metadata().size() << "\n" << std::endl;
 
     for(int i=0; i<h_BTL_uncreco_SoA->view().metadata().size(); i++){
       std::cout << h_BTL_uncreco_SoA->view()[i] << "\n" << std::endl;
     }
 
-    //}
   }  // if ( h_BTL_reco_soa->size() > 0 )
 
+  // --- BTL RECOs:
+
+  std::cout << " ----------------------------------------" << std::endl;
+  if (!h_BTL_reco->empty()) {
+    std::cout << " BTL RECO collection:" << std::endl;
+
+    for (const auto& recHit : *h_BTL_reco) {
+      MTDDetId mtdDetId(recHit.id());
+
+      // --- detector element ID:
+      std::cout << "   det ID:  det = " << mtdDetId.det() << "  subdet = " << mtdDetId.mtdSubDetector()
+                << "  rawID = " << mtdDetId.rawId() << std::endl;
+
+      std::cout << "       energy = " << recHit.energy() << "  time = " << recHit.time()
+	      << "  position = " << recHit.position()
+    	      << "  time error = " << recHit.timeError() << std::endl;
+
+    }  // recHit loop
+
+  }  // if ( h_BTL_reco->size() > 0 )
+
+
   if (h_BTL_reco_SoA->view().metadata().size() > 0) {
-    std::cout << " ----------------------------------------" << std::endl;
     std::cout << " BTL RECO SoA collection: " << h_BTL_reco_SoA->view().metadata().size() << "\n" << std::endl;
     for(int i=0; i<h_BTL_reco_SoA->view().metadata().size(); i++){
       std::cout << h_BTL_reco_SoA->view()[i] << "\n" << std::endl;
