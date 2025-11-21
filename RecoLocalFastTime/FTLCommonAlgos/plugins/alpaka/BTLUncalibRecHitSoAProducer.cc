@@ -26,12 +26,23 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     BTLUncalibRecHitSoAProducer(edm::ParameterSet const& config)
         : EDProducer<>(config),
           digi_{consumes(config.getParameter<edm::InputTag>("digi"))},
-          uncalibrh_{produces()}
+          uncalibrh_{produces()},
+	  adcNBits_(config.getParameter<uint32_t>("adcNbits")),
+          adcSaturation_(config.getParameter<double>("adcSaturation")),
+          adcLSB_(adcSaturation_ / (1 << adcNBits_)),
+	  timeCorr_p0_(config.getParameter<double>("timeCorr_p0")),
+          timeCorr_p1_(config.getParameter<double>("timeCorr_p1")),
+          timeCorr_p2_(config.getParameter<double>("timeCorr_p2"))
     {}
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
       desc.add<edm::InputTag>("digi");
+      desc.add<uint32_t>("adcNbits");
+      desc.add<double>("adcSaturation");
+      desc.add<double>("timeCorr_p0");
+      desc.add<double>("timeCorr_p1");
+      desc.add<double>("timeCorr_p2");
       descriptions.addWithDefaultLabel(desc);
     }
 
@@ -45,7 +56,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
       BTLUncalibRecHitSoAProducerAlgo::fromDigiToUncalib(
-          event.queue(), digi.view(), uncalibrh.view());
+          event.queue(), digi.view(), uncalibrh.view(), adcLSB_, timeCorr_p0_, timeCorr_p1_, timeCorr_p2_);
 
       // Move the SoA with the uncalibrh jets into the Event.
       event.emplace(uncalibrh_, std::move(uncalibrh));
@@ -54,7 +65,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   private:
     const device::EDGetToken<btldigi::BTLDigiDeviceCollection> digi_;
     const device::EDPutToken<BTLUncalibRecHitDeviceCollection> uncalibrh_;
-
+    uint32_t adcNBits_;
+    const double adcSaturation_;
+    const double adcLSB_;
+    const double timeCorr_p0_;
+    const double timeCorr_p1_;
+    const double timeCorr_p2_;
 
   };
 
