@@ -82,7 +82,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   
     ALPAKA_FN_ACC void operator()(Acc1D const& acc, 
                                   btldigi::BTLDigiSoA::ConstView input, 
-                                  BTLUncalibRecHitSoA::View output) const { // when condformat for calib ready, add also tdc and qdc in inputs
+                                  BTLUncalibRecHitSoA::View output,
+                                  const double adcLSB_,
+				  const double timeCorr_p0_,
+				  const double timeCorr_p1_,
+				  const double timeCorr_p2_
+				  ) const { // when condformat for calib ready, add also tdc and qdc in inputs
       // make a strided loop over the kernel grid, covering up to "size" elements
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) { 
         auto entry = input[i];
@@ -108,20 +113,26 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
 	// detId from rawId
         const DetId detId(entry.rawId());
+        
+        // converting the energy from ADC to energy 
+	ampL = ampL *adcLSB_;
+	ampR = ampR *adcLSB_;
+
+        // amp walk corrections, converting the energy from ADC to energy 
+        time1R = time1R - ( timeCorr_p0_ * pow(ampR, timeCorr_p1_) + timeCorr_p2_);
+        time1L = time1L - ( timeCorr_p0_ * pow(ampL, timeCorr_p1_) + timeCorr_p2_);
 
 	// fill the uncalib rechit
-
-
         output[i] = {detId, 
 		    1, // just a placeholder, to be fixed
 		    time1R, // in ns
 		    time2R,
-		    ampR, // in adc
+		    ampR, // energy
 		    entry.IdleTimeR(),
 		    flagsR, 
 	            time1L, // in ns
 		    time2L,
-		    ampL, // in adc
+		    ampL, // energy
 		    entry.IdleTimeL(), 
 		    flagsL, 
 
@@ -132,7 +143,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   void BTLUncalibRecHitSoAProducerAlgo::fromDigiToUncalib(Queue& queue,
                                                    btldigi::BTLDigiSoA::ConstView const& input,
-                                                   BTLUncalibRecHitSoA::View& output) {
+                                                   BTLUncalibRecHitSoA::View& output,
+                                                   const double adcLSB_,
+						   const double timeCorr_p0_,
+                                                   const double timeCorr_p1_,
+                                                   const double timeCorr_p2_) {
 						   //,
                                                    //Table const& tdc,
                                                    //Table const& qdc) {
@@ -145,7 +160,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     uint32_t groups = cms::alpakatools::divide_up_by(input.metadata().size(), items);
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-    alpaka::exec<Acc1D>(queue, grid, BTLdigiToUncalibKernel{}, input, output);
+    alpaka::exec<Acc1D>(queue, grid, BTLdigiToUncalibKernel{}, input, output, adcLSB_, timeCorr_p0_, timeCorr_p1_, timeCorr_p2_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

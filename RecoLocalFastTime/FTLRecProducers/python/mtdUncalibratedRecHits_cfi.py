@@ -41,7 +41,14 @@ mtdUncalibratedRecHits = cms.EDProducer(
 )
 
 mtdUncalibratedRecHitsSoA = cms.EDProducer('btlrechit::BTLUncalibRecHitSoAProducer@alpaka',
-    digi = cms.InputTag("mix", "FTLBarrelSoA"))
+    digi = cms.InputTag("mix", "FTLBarrelSoA"),
+    adcNbits = mtdDigitizer.barrelDigitizer.ElectronicsSimulation.adcNbits,
+    adcSaturation = mtdDigitizer.barrelDigitizer.ElectronicsSimulation.adcSaturation_MIP,
+    timeCorr_p0 = cms.double( 2.21103),
+    timeCorr_p1 = cms.double(-0.933552),
+    timeCorr_p2 = cms.double( 0.)
+    )
+
 
 
 from Configuration.ProcessModifiers.premix_stage2_cff import premix_stage2

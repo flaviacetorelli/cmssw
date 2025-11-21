@@ -29,12 +29,6 @@ mtdRecHits = cms.EDProducer(
 from SimFastTiming.FastTimingCommon.mtdDigitizer_cfi import mtdDigitizer
 mtdRecHitsSoA = cms.EDProducer('btlrechit::BTLRecHitSoAProducer@alpaka',
     uncalibrh = cms.InputTag("mtdUncalibratedRecHitsSoA"),
-    adcNbits = mtdDigitizer.barrelDigitizer.ElectronicsSimulation.adcNbits,
-    adcSaturation = mtdDigitizer.barrelDigitizer.ElectronicsSimulation.adcSaturation_MIP,
-    toaLSB_ns = mtdDigitizer.barrelDigitizer.ElectronicsSimulation.toaLSB_ns,
-    timeCorr_p0 = cms.double( 2.21103),
-    timeCorr_p1 = cms.double(-0.933552),
-    timeCorr_p2 = cms.double( 0.),
     c_LYSO = cms.double(13.846235)     # in unit cm/ns
     )
 

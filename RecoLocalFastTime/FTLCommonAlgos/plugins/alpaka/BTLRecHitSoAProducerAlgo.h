@@ -16,11 +16,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     static void  fromUncalibToReco(Queue& queue,
                                     BTLUncalibRecHitSoA::ConstView const& input,
                                     BTLRecHitSoA::View& output, 
-		                    double adcLSB_, 
-		                    double toaLSBToNS_, 
-				    double timeCorr_p0_, 
-			            double timeCorr_p1_, 
-			            double timeCorr_p2_, 
 				    double c_LYSO_ );
   };
 

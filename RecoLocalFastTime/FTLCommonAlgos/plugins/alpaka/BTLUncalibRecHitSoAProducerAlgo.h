@@ -14,7 +14,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
     static void  fromDigiToUncalib(Queue& queue,
                                     btldigi::BTLDigiSoA::ConstView const& input,
-                                    BTLUncalibRecHitSoA::View& output);
+                                    BTLUncalibRecHitSoA::View& output,
+		                    double adcLSB_, 
+				    double timeCorr_p0_, 
+			            double timeCorr_p1_, 
+			            double timeCorr_p2_);
 
   };
 
