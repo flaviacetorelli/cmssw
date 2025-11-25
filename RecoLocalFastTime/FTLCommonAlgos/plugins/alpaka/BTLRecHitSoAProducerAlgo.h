@@ -16,7 +16,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     static void  fromUncalibToReco(Queue& queue,
                                     BTLUncalibRecHitSoA::ConstView const& input,
                                     BTLRecHitSoA::View& output, 
-				    double c_LYSO_ );
+				    double c_LYSO_, 
+				    double thresholdToKeep_,
+				    double calibration_);
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

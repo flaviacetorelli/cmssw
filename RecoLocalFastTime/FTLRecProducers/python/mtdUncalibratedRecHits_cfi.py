@@ -35,14 +35,13 @@ mtdUncalibratedRecHits = cms.EDProducer(
     EndcapHitsName = cms.string('FTLEndcap')
 )
 
-mtdUncalibratedRecHitsSoA = cms.EDProducer('btlrechit::BTLUncalibRecHitSoAProducer@alpaka',
+mtdUncalibratedRecHitsSoA = cms.EDProducer(
+    'btlrechit::BTLUncalibRecHitSoAProducer@alpaka',
     digi = cms.InputTag("mix", "FTLBarrelSoA"),
-    adcNbits = mtdDigitizer.barrelDigitizer.ElectronicsSimulation.adcNbits,
-    adcSaturation = mtdDigitizer.barrelDigitizer.ElectronicsSimulation.adcSaturation_MIP,
-    timeCorr_p0 = cms.double( 2.21103),
-    timeCorr_p1 = cms.double(-0.933552),
-    timeCorr_p2 = cms.double( 0.)
-    )
+    npeToADC0 = cms.double(-22.5),
+    npeToADC1 = cms.double(0.0348), # Npe to ADC counts conversion
+    npePerMeV = mtdDigitizer.barrelDigitizer.DeviceSimulation.LightOutput # [Npe/MeV]
+)
 
 
 

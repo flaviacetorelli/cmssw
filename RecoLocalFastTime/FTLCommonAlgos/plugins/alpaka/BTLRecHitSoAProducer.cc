@@ -27,17 +27,27 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         : EDProducer<>(config),
           uncalibrh_{consumes(config.getParameter<edm::InputTag>("uncalibrh"))},
           rh_{produces()},
-          c_LYSO_(config.getParameter<double>("c_LYSO"))
-	  {}
+	  invLightSpeedLYSO_(config.getParameter<double>("invLightSpeedLYSO")),
+          c_LYSO_(1. / invLightSpeedLYSO_),
+          thresholdToKeep_(config.getParameter<double>("thresholdToKeep")),
+          calibration_(config.getParameter<double>("calibrationConstant"))
+          {}
+	  //tcToken_ {consumes<MTDTimeCalib, MTDTimeCalibRecord>(edm::ESInputTag("", "MTDTimeCalib"));}
           
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
       desc.add<edm::InputTag>("uncalibrh");
-      desc.add<double>("c_LYSO");
+      desc.add<double>("invLightSpeedLYSO");
+      desc.add<double>("thresholdToKeep");
+      desc.add<double>("calibrationConstant");
       descriptions.addWithDefaultLabel(desc);
     }
 
+    //void BTLRecHitSoAProducer::getEventSetup(const edm::EventSetup& es) {
+    //   auto pTC = es.getHandle(tcToken_);
+    //   time_calib_ = pTC.product();
+    //}
     void produce(edm::StreamID sid, device::Event& event, device::EventSetup const& setup) const override {
       // NB should be inserted a method to retrieve calibrations, now they are fixed to default values
       // Get the uncalib from the Event.
@@ -48,7 +58,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
       BTLRecHitSoAProducerAlgo::fromUncalibToReco(
-          event.queue(), uncalibrh.view(), rh.view(),  c_LYSO_);
+          event.queue(), uncalibrh.view(), rh.view(),  c_LYSO_, thresholdToKeep_, calibration_);
 
       // Move the SoA with the rh into the Event.
       event.emplace(rh_, std::move(rh));
@@ -57,7 +67,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   private:
     const device::EDGetToken<BTLUncalibRecHitDeviceCollection> uncalibrh_;
     const device::EDPutToken<BTLRecHitDeviceCollection> rh_;
+    //edm::ESGetToken<MTDTimeCalib, MTDTimeCalibRecord> tcToken_;
+    const double invLightSpeedLYSO_;
     const double c_LYSO_;
+    const double thresholdToKeep_;
+    const double calibration_;
 
   };
 

@@ -1,3 +1,6 @@
+//#define EDM_ML_DEBUG
+#include <cstdio>
+
 #include <alpaka/alpaka.hpp>
 
 #include "DataFormats/FTLRecHitSoA/interface/alpaka/BTLUncalibRecHitDeviceCollection.h"
@@ -74,7 +77,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     return flag; 
   }
 
+ 
+  ALPAKA_FN_ACC float
+	 timeWalkCorr(float amp){
 
+         float tdcLSB_ns = 0.020;
+         float corr = 1.9e6/0.020 * pow(9.389e5/0.0348*(amp +22.5),-0.663) - 7.5e-4*amp - 3.5e-3;
+	 return tdcLSB_ns * corr; 
+	 }
 
   class BTLdigiToUncalibKernel {
   public:
@@ -83,11 +93,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     ALPAKA_FN_ACC void operator()(Acc1D const& acc, 
                                   btldigi::BTLDigiSoA::ConstView input, 
                                   BTLUncalibRecHitSoA::View output,
-                                  const double adcLSB_,
-				  const double timeCorr_p0_,
-				  const double timeCorr_p1_,
-				  const double timeCorr_p2_
-				  ) const { // when condformat for calib ready, add also tdc and qdc in inputs
+                                  const double npeToADC0_,
+                                  const double invADCPerMeV_) const { // when condformat for calib ready, add also tdc and qdc in inputs
+
       // make a strided loop over the kernel grid, covering up to "size" elements
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) { 
         auto entry = input[i];
@@ -113,26 +121,40 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
 	// detId from rawId
         const DetId detId(entry.rawId());
-        
-        // converting the energy from ADC to energy 
-	ampL = ampL *adcLSB_;
-	ampR = ampR *adcLSB_;
+        // amp walk correction
+        auto corrR =  timeWalkCorr(ampR);
+        auto corrL =  timeWalkCorr(ampL);
 
-        // amp walk corrections, converting the energy from ADC to energy 
-        time1R = time1R - ( timeCorr_p0_ * pow(ampR, timeCorr_p1_) + timeCorr_p2_);
-        time1L = time1L - ( timeCorr_p0_ * pow(ampL, timeCorr_p1_) + timeCorr_p2_);
+        // amp walk corrections
+        auto time1Rcorr = time1R - corrR;
+        auto time1Lcorr = time1L - corrL;
+
+        // converting the energy from ADC to energy 
+	auto energyR = float( (ampR - npeToADC0_)*invADCPerMeV_);
+	auto energyL = float( (ampL - npeToADC0_)*invADCPerMeV_);
+	#ifdef EDM_ML_DEBUG
+	    printf("Time before corrections (%f, %f) - ",time1L, time1R ); 
+	    printf("Amp Walk Corrections (%f , %f) -->  ", corrL, corrR ); 
+	    printf("Time after corrections (%f, %f) \n",time1Lcorr, time1Rcorr ); 
+
+
+	    printf("Amplidute in ADC (%f, %f) - ", ampL, ampR ); 
+	    printf(" converting to energy (%f, %f) --> ", npeToADC0_, invADCPerMeV_ ); 
+	    printf(" Enervy in MeV (%f, %f) \n ", energyL, energyR ); 
+        #endif
+        
 
 	// fill the uncalib rechit
         output[i] = {detId, 
 		    1, // just a placeholder, to be fixed
-		    time1R, // in ns
+		    time1Rcorr, // in ns
 		    time2R,
-		    ampR, // energy
+		    energyR, // energy
 		    entry.IdleTimeR(),
 		    flagsR, 
-	            time1L, // in ns
+	            time1Lcorr, // in ns
 		    time2L,
-		    ampL, // energy
+		    energyL, // energy
 		    entry.IdleTimeL(), 
 		    flagsL, 
 
@@ -144,10 +166,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   void BTLUncalibRecHitSoAProducerAlgo::fromDigiToUncalib(Queue& queue,
                                                    btldigi::BTLDigiSoA::ConstView const& input,
                                                    BTLUncalibRecHitSoA::View& output,
-                                                   const double adcLSB_,
-						   const double timeCorr_p0_,
-                                                   const double timeCorr_p1_,
-                                                   const double timeCorr_p2_) {
+                                                   const double npeToADC0_,
+                                                   const double invADCPerMeV_) {
 						   //,
                                                    //Table const& tdc,
                                                    //Table const& qdc) {
@@ -160,7 +180,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     uint32_t groups = cms::alpakatools::divide_up_by(input.metadata().size(), items);
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-    alpaka::exec<Acc1D>(queue, grid, BTLdigiToUncalibKernel{}, input, output, adcLSB_, timeCorr_p0_, timeCorr_p1_, timeCorr_p2_);
+    alpaka::exec<Acc1D>(queue, grid, BTLdigiToUncalibKernel{}, input, output, npeToADC0_, invADCPerMeV_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

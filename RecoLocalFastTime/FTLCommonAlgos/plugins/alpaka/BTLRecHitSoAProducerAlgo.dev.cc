@@ -1,5 +1,6 @@
 #include <alpaka/alpaka.hpp>
 
+#include "RecoLocalFastTime/FTLCommonAlgos/interface/MTDTimeCalib.h"
 #include "DataFormats/FTLRecHitSoA/interface/BTLUncalibRecHitSoA.h"
 #include "DataFormats/FTLRecHitSoA/interface/BTLRecHitSoA.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
@@ -10,6 +11,11 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   using namespace ::btlrechit;
+  ALPAKA_FN_ACC float
+	 timeResolutionInNs(float amp){
+	 return 0.0593858*pow(amp,-1.02826)+0.0156719; 
+	 }
+
 
   class BTLUncalibToRecoKernel {
   public:
@@ -18,7 +24,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     ALPAKA_FN_ACC void operator()(Acc1D const& acc, 
                                   BTLUncalibRecHitSoA::ConstView input, 
                                   BTLRecHitSoA::View output,
-				  const double c_LYSO_) const { 
+				  const double c_LYSO_, 
+				  const double thresholdToKeep_,
+				  const double calibration_) const { 
 	                    // make a strided loop over the kernel grid, covering up to "size" elements
 
       	    
@@ -62,16 +70,31 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 	  energy = (entry.ampR() + entry.ampL() ) / 2.; 
         }
 
+        // energy calibration
+	energy *= calibration_;
 
+        // --- Time calibration: for the time being just removes a time offset in BTL
+        //time1 += time_calib_->getTimeCalib(entry.detId());
+	
+	time_error = timeResolutionInNs(energy);
+
+
+        // Now fill flags
+        // all rechits from the digitizer are "good" at present, good is 1, bad is 0
+        if (energy > thresholdToKeep_) {
+          flag = 1;
+        } else {
+          flag = 0;
+        }
 
 	// fill the rechit 
         output[i] = {entry.detId(),
-		    entry.row() , // dummy
+		    entry.row() , //dummy
 		    time1,
 		    time2,
 		    energy, 
 		    position, 
-		    time_error, // dummy 
+		    time_error, 
 		    position_error, // dummy
 		    flag	
 	};
@@ -82,7 +105,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   void BTLRecHitSoAProducerAlgo::fromUncalibToReco(Queue& queue,
                                                    BTLUncalibRecHitSoA::ConstView const& input,
                                                    BTLRecHitSoA::View& output,
-                                                   const double c_LYSO_ ) {
+                                                   const double c_LYSO_,
+						   const double thresholdToKeep_, 
+						   const double calibration_) {
     // Use 64 items per group.
     // This value is arbitrary, but it's a reasonable starting point.
     uint32_t items = 64;
@@ -92,7 +117,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     uint32_t groups = cms::alpakatools::divide_up_by(input.metadata().size(), items);
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-    alpaka::exec<Acc1D>(queue, grid, BTLUncalibToRecoKernel{}, input, output, c_LYSO_);
+    alpaka::exec<Acc1D>(queue, grid, BTLUncalibToRecoKernel{}, input, output, c_LYSO_, thresholdToKeep_, calibration_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit
