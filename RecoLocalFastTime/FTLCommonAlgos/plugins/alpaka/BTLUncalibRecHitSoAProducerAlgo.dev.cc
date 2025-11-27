@@ -22,18 +22,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
     // tdc calibration parameters 
     // (to be modified: these parameters are evaluated by channel and stored in parquet files)
-    static constexpr float tclock = 6.25; 
     static constexpr float a0 = 57.244545; 
     static constexpr float a1 = 511.27832; 
     static constexpr float a2 = -7.8838577;
     static constexpr float t0 = -0.048343264; 
  
     float const qT = (-a1 + sqrt(a1 * a1 - 4.0 * (a0 - float(tfine)) * a2)) / (2.0 * a2); 
-    float const time  = (tcoarse - qT - t0)*tclock;
+    float const time  = tcoarse - qT - t0;
     return time; 
   }
 
-  ALPAKA_FN_ACC float	      
+  ALPAKA_FN_ACC uint32_t 
   QfineToADC(uint32_t rawId, uint8_t chID, uint8_t TACID, uint16_t qfine, float time1, uint16_t timeEndQ) { 
  
     // qdc calibration parameters 
@@ -50,7 +49,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     static constexpr float p9 = 0.0;
     float const ti = float(timeEndQ) - time1; 
 
-    int const pedestal = ( // check the type
+    uint32_t pedestal = ( // check the type
         p0
         + p1 * ti
         + p2 * ti * ti
@@ -64,9 +63,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     );
 
 
-    float energy = float(qfine) - float(pedestal);
+    const uint32_t adc = qfine - pedestal;
 
-    return energy; 
+    return adc; 
 
 
   }
@@ -96,12 +95,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
                                   const double npeToADC0_,
                                   const double invADCPerMeV_) const { // when condformat for calib ready, add also tdc and qdc in inputs
 
+      static constexpr float tclock = 6.25; 
       // make a strided loop over the kernel grid, covering up to "size" elements
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) { 
         auto entry = input[i];
         // here you should call your functions to apply TDC and QDC, reading timecoarse, fine, ... etc from digi
  
-	// for the times at first and second th
+	// for the times at first and second th, still in clock units
 	// atm tdc and qdc calibs are fixed to dummy values for each channel, hence rawId, ch, and the bool to select branch 1 or 2 are not used.
       	auto time1R = TcoarseTfineToTime(entry.rawId(), entry.chIDR(), entry.TACIDR(),  entry.T1coarseR(),  entry.T1fineR(), true); 
       	auto time1L = TcoarseTfineToTime(entry.rawId(), entry.chIDL(), entry.TACIDL(),  entry.T1coarseL(),  entry.T1fineL(),  true); 
@@ -110,8 +110,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       	auto time2L = TcoarseTfineToTime(entry.rawId(), entry.chIDL(), entry.TACIDL(), entry.T2coarseL(), entry.T2fineL(),  false); 
 
 	// from qfine to energy in adc, NB you need to pass calibrated time
-	auto ampL = QfineToADC(entry.rawId(), entry.chIDL(), entry.TACIDL(), entry.ChargeL(), time1L, time2L); //atm EOIcoarseL is 0 so put time2 instead 
-	auto ampR = QfineToADC(entry.rawId(), entry.chIDR(), entry.TACIDR(), entry.ChargeR(), time1R, time2R); 
+	auto ampL = QfineToADC(entry.rawId(), entry.chIDL(), entry.TACIDL(), entry.ChargeL(), time1L, entry.EOIcoarseL()); 
+	auto ampR = QfineToADC(entry.rawId(), entry.chIDR(), entry.TACIDR(), entry.ChargeR(), time1R, entry.EOIcoarseR()); 
 
 	// flags for the usability of the channel uint_8 
 	//auto flagsL = createFlag(entry.PrevTrigFL(),... ); // to be implemented WIP
@@ -121,26 +121,42 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
 	// detId from rawId
         const DetId detId(entry.rawId());
+        // convert from cloack units to ps
+	time1R *= tclock;
+	time1L *= tclock;
+	time2R *= tclock;
+	time2L *= tclock;
+
         // amp walk correction
         auto corrR =  timeWalkCorr(ampR);
         auto corrL =  timeWalkCorr(ampL);
 
-        // amp walk corrections
+        // convert from clock units to ps, apply amp walk corrections
         auto time1Rcorr = time1R - corrR;
         auto time1Lcorr = time1L - corrL;
 
+	auto time2Rcorr = time2R - corrR;
+        auto time2Lcorr = time2L - corrL;
+
+
+
         // converting the energy from ADC to energy 
-	auto energyR = float( (ampR - npeToADC0_)*invADCPerMeV_);
-	auto energyL = float( (ampL - npeToADC0_)*invADCPerMeV_);
+	auto energyR = float((float(ampR) - npeToADC0_)*invADCPerMeV_);
+	auto energyL = float((float(ampL) - npeToADC0_)*invADCPerMeV_);
+
 	#ifdef EDM_ML_DEBUG
-	    printf("Time before corrections (%f, %f) - ",time1L, time1R ); 
-	    printf("Amp Walk Corrections (%f , %f) -->  ", corrL, corrR ); 
-	    printf("Time after corrections (%f, %f) \n",time1Lcorr, time1Rcorr ); 
+	    printf("Base recHit SoA with raw id %i \n", entry.rawId() ); 
+	    printf("Time 1 before corrections L,R (%f, %f) - ",time1L, time1R ); 
+	    printf("Amp Walk Corrections L,R (%f , %f) -->  ", corrL, corrR ); 
+	    printf("Time 1 after corrections L,R (%f, %f) \n",time1Lcorr, time1Rcorr ); 
 
+	    printf("Time 2 before corrections L,R (%f, %f) - ",time2L, time2R ); 
+	    printf("Amp Walk Corrections L,R (%f , %f) -->  ", corrL, corrR ); 
+	    printf("Time 2 after corrections L,R (%f, %f) \n",time2Lcorr, time2Rcorr ); 
 
-	    printf("Amplidute in ADC (%f, %f) - ", ampL, ampR ); 
-	    printf(" converting to energy (%f, %f) --> ", npeToADC0_, invADCPerMeV_ ); 
-	    printf(" Enervy in MeV (%f, %f) \n ", energyL, energyR ); 
+	    printf("Amplidute in ADC L,R (%i, %i) - ", ampL, ampR ); 
+	    printf("converting to energy L,R (%f, %f) --> ", npeToADC0_, invADCPerMeV_ ); 
+	    printf("Energy in MeV L,R (%f, %f) \n", energyL, energyR ); 
         #endif
         
 
@@ -148,12 +164,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         output[i] = {detId, 
 		    1, // just a placeholder, to be fixed
 		    time1Rcorr, // in ns
-		    time2R,
+		    time2Rcorr,
 		    energyR, // energy
 		    entry.IdleTimeR(),
 		    flagsR, 
 	            time1Lcorr, // in ns
-		    time2L,
+		    time2Lcorr,
 		    energyL, // energy
 		    entry.IdleTimeL(), 
 		    flagsL, 

@@ -1,3 +1,4 @@
+//#define EDM_ML_DEBUG
 #include <alpaka/alpaka.hpp>
 
 #include "RecoLocalFastTime/FTLCommonAlgos/interface/MTDTimeCalib.h"
@@ -86,6 +87,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         } else {
           flag = 0;
         }
+
+	#ifdef EDM_ML_DEBUG
+
+	    printf("RecHit SoA with raw id %i \n", entry.detId().rawId()); 
+	    printf("Time 1  L,R (%f, %f) and average, error (%f, %f) \n", entry.time1L(), entry.time1R(), time1, time_error); 
+	    printf("Time 2  L,R (%f, %f) and average %f \n", entry.time2L(), entry.time2R(), time2); 
+	    printf("Energy  L,R (%f, %f) and average %f \n", entry.ampL(), entry.ampR(), energy); 
+	    printf("Position and error (%f, %f) \n", position , position_error); 
+
+        #endif
+        
+
 
 	// fill the rechit 
         output[i] = {entry.detId(),
