@@ -22,18 +22,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   class BTLRecHitSoAProducer : public global::EDProducer<> {
   public:
-    // constructor	  
+    // constructor
     BTLRecHitSoAProducer(edm::ParameterSet const& config)
         : EDProducer<>(config),
           baserh_{consumes(config.getParameter<edm::InputTag>("baserh"))},
           rh_{produces()},
-	  invLightSpeedLYSO_(config.getParameter<double>("invLightSpeedLYSO")),
+          invLightSpeedLYSO_(config.getParameter<double>("invLightSpeedLYSO")),
           c_LYSO_(1. / invLightSpeedLYSO_),
           thresholdToKeep_(config.getParameter<double>("thresholdToKeep")),
-          calibration_(config.getParameter<double>("calibrationConstant"))
-          {}
-	  //tcToken_ {consumes<MTDTimeCalib, MTDTimeCalibRecord>(edm::ESInputTag("", "MTDTimeCalib"));}
-          
+          calibration_(config.getParameter<double>("calibrationConstant")) {}
+    //tcToken_ {consumes<MTDTimeCalib, MTDTimeCalibRecord>(edm::ESInputTag("", "MTDTimeCalib"));}
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
@@ -58,7 +56,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
       BTLRecHitSoAProducerAlgo::fromBaseToReco(
-          event.queue(), baserh.view(), rh.view(),  c_LYSO_, thresholdToKeep_, calibration_);
+          event.queue(), baserh.view(), rh.view(), c_LYSO_, thresholdToKeep_, calibration_);
 
       // Move the SoA with the rh into the Event.
       event.emplace(rh_, std::move(rh));
@@ -72,7 +70,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     const double c_LYSO_;
     const double thresholdToKeep_;
     const double calibration_;
-
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

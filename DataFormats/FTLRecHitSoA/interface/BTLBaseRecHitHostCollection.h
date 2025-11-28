@@ -5,9 +5,9 @@
 #include "DataFormats/Portable/interface/PortableHostCollection.h"
 
 namespace btlrechit {
-  
+
   using BTLBaseRecHitHostCollection = PortableHostCollection<BTLBaseRecHitSoA>;
 
-} // namespace btluncalibrechit
+}  // namespace btlrechit
 
 #endif  // DataFormats_FTLRecHitSoA_interface_BTLBaseRecHitHostCollection_h

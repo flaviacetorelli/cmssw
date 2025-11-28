@@ -11,8 +11,8 @@
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/ForwardDetId/interface/MTDDetId.h"
 #include "DataFormats/FTLRecHit/interface/FTLRecHitCollections.h"
-#include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitHostCollection.h" 
-#include "DataFormats/FTLRecHitSoA/interface/BTLRecHitHostCollection.h" 
+#include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitHostCollection.h"
+#include "DataFormats/FTLRecHitSoA/interface/BTLRecHitHostCollection.h"
 
 class BTLRecoSoADump : public edm::one::EDAnalyzer<edm::one::SharedResources> {
 public:
@@ -37,10 +37,10 @@ private:
 BTLRecoSoADump::BTLRecoSoADump(const edm::ParameterSet& iConfig)
 
 {
-  tok_BTL_uncreco = consumes<FTLUncalibratedRecHitCollection>(edm::InputTag("mtdUncalibratedRecHits", "FTLBarrel"));	
-  tok_BTL_reco = consumes<FTLRecHitCollection>(edm::InputTag("mtdRecHits", "FTLBarrel"));	
-  tok_BTL_basereco_SoA = consumes<btlrechit::BTLBaseRecHitHostCollection>(edm::InputTag("mtdBaseratedRecHitsSoA"));	
-  tok_BTL_reco_SoA = consumes<btlrechit::BTLRecHitHostCollection>(edm::InputTag("mtdRecHitsSoA"));	
+  tok_BTL_uncreco = consumes<FTLUncalibratedRecHitCollection>(edm::InputTag("mtdUncalibratedRecHits", "FTLBarrel"));
+  tok_BTL_reco = consumes<FTLRecHitCollection>(edm::InputTag("mtdRecHits", "FTLBarrel"));
+  tok_BTL_basereco_SoA = consumes<btlrechit::BTLBaseRecHitHostCollection>(edm::InputTag("mtdBaseratedRecHitsSoA"));
+  tok_BTL_reco_SoA = consumes<btlrechit::BTLRecHitHostCollection>(edm::InputTag("mtdRecHitsSoA"));
 }
 
 BTLRecoSoADump::~BTLRecoSoADump() {}
@@ -78,17 +78,15 @@ void BTLRecoSoADump::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 
       std::cout << "  amplitude = " << recHit.amplitude().first << "  time = " << recHit.time().first
                 << "  amplitude = " << recHit.amplitude().second << "  time = " << recHit.time().second
-	        << "  position = " << recHit.position()
-                << "  time error = " << recHit.timeError() << std::endl;
+                << "  position = " << recHit.position() << "  time error = " << recHit.timeError() << std::endl;
 
     }  // recHit loop
-
-   } 
+  }
 
   if (h_BTL_basereco_SoA->view().metadata().size() > 0) {
     std::cout << " BTL Base RECO SoA collection: " << h_BTL_basereco_SoA->view().metadata().size() << "\n" << std::endl;
 
-    for(int i=0; i<h_BTL_basereco_SoA->view().metadata().size(); i++){
+    for (int i = 0; i < h_BTL_basereco_SoA->view().metadata().size(); i++) {
       std::cout << h_BTL_basereco_SoA->view()[i] << "\n" << std::endl;
     }
 
@@ -108,24 +106,20 @@ void BTLRecoSoADump::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
                 << "  rawID = " << mtdDetId.rawId() << std::endl;
 
       std::cout << "       energy = " << recHit.energy() << "  time = " << recHit.time()
-	      << "  position = " << recHit.position()
-    	      << "  time error = " << recHit.timeError() << std::endl;
+                << "  position = " << recHit.position() << "  time error = " << recHit.timeError() << std::endl;
 
     }  // recHit loop
 
   }  // if ( h_BTL_reco->size() > 0 )
 
-
   if (h_BTL_reco_SoA->view().metadata().size() > 0) {
     std::cout << " BTL RECO SoA collection: " << h_BTL_reco_SoA->view().metadata().size() << "\n" << std::endl;
-    for(int i=0; i<h_BTL_reco_SoA->view().metadata().size(); i++){
+    for (int i = 0; i < h_BTL_reco_SoA->view().metadata().size(); i++) {
       std::cout << h_BTL_reco_SoA->view()[i] << "\n" << std::endl;
     }
 
     //  MTDDetId mtdDetId(h_BTL_reco_SoA->view()[i].detId());
   }  // if ( h_BTL_reco_soa->size() > 0 )
-
-
 }
 
 // ------------ method called once each job just before starting event loop  ------------

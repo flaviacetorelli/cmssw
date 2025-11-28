@@ -24,9 +24,8 @@
 #include "DataFormats/Common/interface/ValidHandle.h"
 #include "DataFormats/Math/interface/GeantUnits.h"
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
-#include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitHostCollection.h" 
-#include "DataFormats/FTLRecHitSoA/interface/BTLRecHitHostCollection.h" 
-
+#include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitHostCollection.h"
+#include "DataFormats/FTLRecHitSoA/interface/BTLRecHitHostCollection.h"
 
 #include "SimDataFormats/CaloAnalysis/interface/MtdSimLayerCluster.h"
 #include "SimDataFormats/Associations/interface/MtdRecoClusterToSimLayerClusterAssociationMap.h"
@@ -150,7 +149,6 @@ private:
   MonitorElement* meTimeResEtavsQ_[nBinsEta_][nBinsEtaQ_];
 };
 
-
 // ------------ constructor and destructor --------------
 BtlLocalRecoSoAValidation::BtlLocalRecoSoAValidation(const edm::ParameterSet& iConfig)
     : folder_(iConfig.getParameter<std::string>("folder")),
@@ -160,10 +158,11 @@ BtlLocalRecoSoAValidation::BtlLocalRecoSoAValidation(const edm::ParameterSet& iC
       hitMinAmplitude_(iConfig.getParameter<double>("HitMinimumAmplitude")),
       mtdgeoToken_(esConsumes<MTDGeometry, MTDDigiGeometryRecord>()),
       mtdtopoToken_(esConsumes<MTDTopology, MTDTopologyRcd>()) {
-      btlRecHitsSoAToken_ =  consumes<btlrechit::BTLRecHitHostCollection>(iConfig.getParameter<edm::InputTag>("recHitsSoATag"));
-      btlBaseRecHitsSoAToken_ =
-	   consumes<btlrechit::BTLBaseRecHitHostCollection>(iConfig.getParameter<edm::InputTag>("uncalibRecHitsSoATag"));
-      btlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("simHitsTag"));
+  btlRecHitsSoAToken_ =
+      consumes<btlrechit::BTLRecHitHostCollection>(iConfig.getParameter<edm::InputTag>("recHitsSoATag"));
+  btlBaseRecHitsSoAToken_ =
+      consumes<btlrechit::BTLBaseRecHitHostCollection>(iConfig.getParameter<edm::InputTag>("uncalibRecHitsSoATag"));
+  btlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("simHitsTag"));
 }
 
 BtlLocalRecoSoAValidation::~BtlLocalRecoSoAValidation() {}
@@ -180,11 +179,9 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
   auto topologyHandle = iSetup.getTransientHandle(mtdtopoToken_);
   const MTDTopology* topology = topologyHandle.product();
 
-
   auto btlRecHitsSoAHandle = makeValid(iEvent.getHandle(btlRecHitsSoAToken_));
   auto btlSimHitsHandle = makeValid(iEvent.getHandle(btlSimHitsToken_));
   MixCollection<PSimHit> btlSimHits(btlSimHitsHandle.product());
-
 
   // --- Loop over the BTL SIM hits
   std::unordered_map<uint32_t, MTDHit> m_btlSimHits;
@@ -216,19 +213,18 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
   unsigned int n_reco_btl = 0;
   unsigned int n_reco_btl_nosimhit = 0;
   //for (const auto& recHit : *btlRecHitsHandle) {
-  for(int i=0; i<btlRecHitsSoAHandle->view().metadata().size(); i++){
-    auto recHit =  btlRecHitsSoAHandle->view()[i];	  
-    LogTrace("BtlLocalRecoSoAValidation") << "@RH detid " << recHit.detId().rawId() << " r/c/X/dX " << recHit.row() << " "
-                                       << recHit.position() << " " << recHit.position_error()
-                                       << " E,T,dT " << recHit.energy() << " " << recHit.time1() << " "
-                                       << recHit.time1_error();
+  for (int i = 0; i < btlRecHitsSoAHandle->view().metadata().size(); i++) {
+    auto recHit = btlRecHitsSoAHandle->view()[i];
+    LogTrace("BtlLocalRecoSoAValidation") << "@RH detid " << recHit.detId().rawId() << " r/c/X/dX " << recHit.row()
+                                          << " " << recHit.position() << " " << recHit.position_error() << " E,T,dT "
+                                          << recHit.energy() << " " << recHit.time1() << " " << recHit.time1_error();
 
     BTLDetId detId = recHit.detId();
     DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topology->getMTDTopologyMode()));
     const MTDGeomDet* thedet = geom->idToDet(geoId);
     if (thedet == nullptr)
       throw cms::Exception("BtlLocalRecoSoAValidation") << "GeographicalID: " << std::hex << geoId.rawId() << " ("
-                                                     << detId.rawId() << ") is invalid!" << std::dec << std::endl;
+                                                        << detId.rawId() << ") is invalid!" << std::dec << std::endl;
     const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(thedet->topology());
     const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
 
@@ -265,8 +261,8 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
     meHitTvsZ_->Fill(global_point.z(), recHit.time1());
 
     // Resolution histograms
-    LogDebug("BtlLocalRecoSoAValidation") << "RecoHit DetId= " << detId.rawId()
-                                       << " sim hits in id= " << m_btlSimHits.count(detId.rawId());
+    LogDebug("BtlLocalRecoSoAValidation")
+        << "RecoHit DetId= " << detId.rawId() << " sim hits in id= " << m_btlSimHits.count(detId.rawId());
     if (m_btlSimHits.count(detId.rawId()) == 1 && m_btlSimHits[detId.rawId()].energy > hitMinEnergy_) {
       float longpos_res = recHit.position() - convertMmToCm(m_btlSimHits[detId.rawId()].x);
       float time_res = recHit.time1() - m_btlSimHits[detId.rawId()].time;
@@ -292,9 +288,9 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
       meTPullvsE_->Fill(m_btlSimHits[detId.rawId()].energy, time_res / recHit.time1_error());
     } else if (m_btlSimHits.count(detId.rawId()) == 0) {
       n_reco_btl_nosimhit++;
-      LogDebug("BtlLocalRecoSoAValidation") << "BTL rec hit with no corresponding sim hit in crystal, DetId= "
-                                         << detId.rawId() << " geoId= " << geoId.rawId() << " ene= " << recHit.energy()
-                                         << " time= " << recHit.time1();
+      LogDebug("BtlLocalRecoSoAValidation")
+          << "BTL rec hit with no corresponding sim hit in crystal, DetId= " << detId.rawId()
+          << " geoId= " << geoId.rawId() << " ene= " << recHit.energy() << " time= " << recHit.time1();
     }
 
     n_reco_btl++;
@@ -310,18 +306,16 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
     meUnmatchedRecHit_->Fill(std::log10(n_reco_btl_nosimhit));
   }
 
-
   // --- Loop over the BTL Baserated RECO hits
   if (optionalPlots_) {
     auto btlBaseRecHitsSoAHandle = makeValid(iEvent.getHandle(btlBaseRecHitsSoAToken_));
-    for(int i=0; i<btlBaseRecHitsSoAHandle->view().metadata().size(); i++){
-    //for (const auto& uRecHit : *btlBaseRecHitsHandle) {
+    for (int i = 0; i < btlBaseRecHitsSoAHandle->view().metadata().size(); i++) {
+      //for (const auto& uRecHit : *btlBaseRecHitsHandle) {
       auto uRecHit = btlBaseRecHitsSoAHandle->view()[i];
       BTLDetId detId = uRecHit.detId();
 
       LogTrace("BtlLocalRecoSoAValidation") << "@URH detid " << detId.rawId() << " A " << uRecHit.ampR() << " "
-                                         << uRecHit.ampL() << " T " << uRecHit.time1R() << " "
-                                         << uRecHit.time1L();
+                                            << uRecHit.ampL() << " T " << uRecHit.time1R() << " " << uRecHit.time1L();
 
       // --- Skip BaseratedRecHits not matched to SimHits
       if (m_btlSimHits.count(detId.rawId()) != 1)
@@ -358,13 +352,13 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
       if (hit_amplitude < hitMinAmplitude_)
         continue;
 
-
       if (uncalibRecHitsPlots_) {
         DetId geoId = detId.geographicalId(MTDTopologyMode::crysLayoutFromTopoMode(topology->getMTDTopologyMode()));
         const MTDGeomDet* thedet = geom->idToDet(geoId);
         if (thedet == nullptr)
-          throw cms::Exception("BtlLocalRecoSoAValidation") << "GeographicalID: " << std::hex << geoId.rawId() << " ("
-                                                         << detId.rawId() << ") is invalid!" << std::dec << std::endl;
+          throw cms::Exception("BtlLocalRecoSoAValidation")
+              << "GeographicalID: " << std::hex << geoId.rawId() << " (" << detId.rawId() << ") is invalid!" << std::dec
+              << std::endl;
         const ProxyMTDTopology& topoproxy = static_cast<const ProxyMTDTopology&>(thedet->topology());
         const RectangularMTDTopology& topo = static_cast<const RectangularMTDTopology&>(topoproxy.specificTopology());
 
@@ -410,8 +404,8 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
 
 // ------------ method for histogram booking ------------
 void BtlLocalRecoSoAValidation::bookHistograms(DQMStore::IBooker& ibook,
-                                            edm::Run const& run,
-                                            edm::EventSetup const& iSetup) {
+                                               edm::Run const& run,
+                                               edm::EventSetup const& iSetup) {
   ibook.setCurrentFolder(folder_);
 
   // --- histograms booking

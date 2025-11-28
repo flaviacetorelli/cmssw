@@ -12,16 +12,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   using namespace ::btlrechit;
 
   struct BTLRecHitSoAProducerAlgo {
-
-    static void  fromBaseToReco(Queue& queue,
-                                    BTLBaseRecHitSoA::ConstView const& input,
-                                    BTLRecHitSoA::View& output, 
-				    double c_LYSO_, 
-				    double thresholdToKeep_,
-				    double calibration_);
+    static void fromBaseToReco(Queue& queue,
+                               BTLBaseRecHitSoA::ConstView const& input,
+                               BTLRecHitSoA::View& output,
+                               double c_LYSO_,
+                               double thresholdToKeep_,
+                               double calibration_);
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit
 
 #endif  // RecoLocalFastTime_FTLCommonAlgos_plugins_alpaka_BTLRecHitSoAProducerAlgo_h
-
