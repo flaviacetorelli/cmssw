@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 from RecoLocalFastTime.FTLRecProducers.mtdUncalibratedRecHits_cfi import mtdUncalibratedRecHits
-from RecoLocalFastTime.FTLRecProducers.mtdUncalibratedRecHits_cfi import mtdUncalibratedRecHitsSoA
+from RecoLocalFastTime.FTLRecProducers.mtdUncalibratedRecHits_cfi import mtdBaseRecHitsSoA
 from RecoLocalFastTime.FTLRecProducers.mtdRecHits_cfi import mtdRecHits
 from RecoLocalFastTime.FTLRecProducers.mtdRecHits_cfi import mtdRecHitsSoA
 from RecoLocalFastTime.FTLRecProducers.mtdTrackingRecHits_cfi import mtdTrackingRecHits
@@ -10,5 +10,5 @@ from RecoLocalFastTime.FTLClusterizer.mtdClusters_cfi import mtdClusters
 from RecoLocalFastTime.FTLClusterizer.MTDCPEESProducers_cff import *
 from RecoLocalFastTime.FTLRecProducers.MTDTimeCalibESProducers_cff import *
 
-fastTimingLocalRecoTask = cms.Task(mtdUncalibratedRecHits,mtdRecHits,mtdUncalibratedRecHitsSoA,mtdRecHitsSoA,mtdClusters,mtdTrackingRecHits)
+fastTimingLocalRecoTask = cms.Task(mtdUncalibratedRecHits,mtdRecHits,mtdBaseRecHitsSoA,mtdRecHitsSoA,mtdClusters,mtdTrackingRecHits)
 fastTimingLocalReco = cms.Sequence(fastTimingLocalRecoTask)

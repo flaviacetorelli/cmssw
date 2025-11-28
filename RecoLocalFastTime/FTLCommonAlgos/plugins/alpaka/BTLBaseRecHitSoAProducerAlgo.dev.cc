@@ -1,15 +1,15 @@
-//#define EDM_ML_DEBUG
+#define EDM_ML_DEBUG
 #include <cstdio>
 
 #include <alpaka/alpaka.hpp>
 
-#include "DataFormats/FTLRecHitSoA/interface/alpaka/BTLUncalibRecHitDeviceCollection.h"
+#include "DataFormats/FTLRecHitSoA/interface/alpaka/BTLBaseRecHitDeviceCollection.h"
 #include "DataFormats/FTLDigiSoA/interface/alpaka/BTLDigiDeviceCollection.h"
 
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
 
-#include "BTLUncalibRecHitSoAProducerAlgo.h"
+#include "BTLBaseRecHitSoAProducerAlgo.h"
 
 
 
@@ -85,13 +85,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 	 return tdcLSB_ns * corr; 
 	 }
 
-  class BTLdigiToUncalibKernel {
+  class BTLdigiToBaseKernel {
   public:
 
   
     ALPAKA_FN_ACC void operator()(Acc1D const& acc, 
                                   btldigi::BTLDigiSoA::ConstView input, 
-                                  BTLUncalibRecHitSoA::View output,
+                                  BTLBaseRecHitSoA::View output,
                                   const double npeToADC0_,
                                   const double invADCPerMeV_) const { // when condformat for calib ready, add also tdc and qdc in inputs
 
@@ -179,9 +179,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     }
   };
 
-  void BTLUncalibRecHitSoAProducerAlgo::fromDigiToUncalib(Queue& queue,
+  void BTLBaseRecHitSoAProducerAlgo::fromDigiToBase(Queue& queue,
                                                    btldigi::BTLDigiSoA::ConstView const& input,
-                                                   BTLUncalibRecHitSoA::View& output,
+                                                   BTLBaseRecHitSoA::View& output,
                                                    const double npeToADC0_,
                                                    const double invADCPerMeV_) {
 						   //,
@@ -196,7 +196,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     uint32_t groups = cms::alpakatools::divide_up_by(input.metadata().size(), items);
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-    alpaka::exec<Acc1D>(queue, grid, BTLdigiToUncalibKernel{}, input, output, npeToADC0_, invADCPerMeV_);
+    alpaka::exec<Acc1D>(queue, grid, BTLdigiToBaseKernel{}, input, output, npeToADC0_, invADCPerMeV_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

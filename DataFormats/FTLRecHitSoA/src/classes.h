@@ -1,5 +1,5 @@
 #include "DataFormats/Common/interface/Wrapper.h"
-#include "DataFormats/FTLRecHitSoA/interface/BTLUncalibRecHitHostCollection.h"
-#include "DataFormats/FTLRecHitSoA/interface/BTLUncalibRecHitSoA.h"
+#include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitHostCollection.h"
+#include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitSoA.h"
 #include "DataFormats/FTLRecHitSoA/interface/BTLRecHitHostCollection.h"
 #include "DataFormats/FTLRecHitSoA/interface/BTLRecHitSoA.h"

@@ -1,8 +1,8 @@
-//#define EDM_ML_DEBUG
+#define EDM_ML_DEBUG
 #include <alpaka/alpaka.hpp>
 
 #include "RecoLocalFastTime/FTLCommonAlgos/interface/MTDTimeCalib.h"
-#include "DataFormats/FTLRecHitSoA/interface/BTLUncalibRecHitSoA.h"
+#include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitSoA.h"
 #include "DataFormats/FTLRecHitSoA/interface/BTLRecHitSoA.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
@@ -18,12 +18,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 	 }
 
 
-  class BTLUncalibToRecoKernel {
+  class BTLBaseToRecoKernel {
   public:
 
   
     ALPAKA_FN_ACC void operator()(Acc1D const& acc, 
-                                  BTLUncalibRecHitSoA::ConstView input, 
+                                  BTLBaseRecHitSoA::ConstView input, 
                                   BTLRecHitSoA::View output,
 				  const double c_LYSO_, 
 				  const double thresholdToKeep_,
@@ -115,8 +115,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     }
   };
 
-  void BTLRecHitSoAProducerAlgo::fromUncalibToReco(Queue& queue,
-                                                   BTLUncalibRecHitSoA::ConstView const& input,
+  void BTLRecHitSoAProducerAlgo::fromBaseToReco(Queue& queue,
+                                                   BTLBaseRecHitSoA::ConstView const& input,
                                                    BTLRecHitSoA::View& output,
                                                    const double c_LYSO_,
 						   const double thresholdToKeep_, 
@@ -130,7 +130,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
     uint32_t groups = cms::alpakatools::divide_up_by(input.metadata().size(), items);
 
     auto grid = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-    alpaka::exec<Acc1D>(queue, grid, BTLUncalibToRecoKernel{}, input, output, c_LYSO_, thresholdToKeep_, calibration_);
+    alpaka::exec<Acc1D>(queue, grid, BTLBaseToRecoKernel{}, input, output, c_LYSO_, thresholdToKeep_, calibration_);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit

@@ -4,7 +4,7 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 
-#include "DataFormats/FTLRecHitSoA/interface/BTLUncalibRecHitSoA.h"
+#include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitSoA.h"
 #include "DataFormats/FTLRecHitSoA/interface/BTLRecHitSoA.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
@@ -13,8 +13,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   struct BTLRecHitSoAProducerAlgo {
 
-    static void  fromUncalibToReco(Queue& queue,
-                                    BTLUncalibRecHitSoA::ConstView const& input,
+    static void  fromBaseToReco(Queue& queue,
+                                    BTLBaseRecHitSoA::ConstView const& input,
                                     BTLRecHitSoA::View& output, 
 				    double c_LYSO_, 
 				    double thresholdToKeep_,

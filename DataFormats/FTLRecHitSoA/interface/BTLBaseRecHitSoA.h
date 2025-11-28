@@ -1,5 +1,5 @@
-#ifndef DataFormats_FTLRecHitSoA_interface_BTLUncalibRecHitSoA_h
-#define DataFormats_FTLRecHitSoA_interface_BTLUncalibRecHitSoA_h
+#ifndef DataFormats_FTLRecHitSoA_interface_BTLBaseRecHitSoA_h
+#define DataFormats_FTLRecHitSoA_interface_BTLBaseRecHitSoA_h
 
 #include <ostream>
 
@@ -9,7 +9,7 @@
 #include "DataFormats/DetId/interface/DetId.h"
 
 namespace btlrechit {
-    GENERATE_SOA_LAYOUT(BTLUncalibRecHitSoALayout,
+    GENERATE_SOA_LAYOUT(BTLBaseRecHitSoALayout,
                         SOA_COLUMN(DetId, detId), 
                         SOA_COLUMN(uint8_t, row), 
                         SOA_COLUMN(float, time1R),   
@@ -24,11 +24,11 @@ namespace btlrechit {
                         SOA_COLUMN(uint8_t, flagsL))
 					
 		    
-    using BTLUncalibRecHitSoA = BTLUncalibRecHitSoALayout<>;
-    using BTLUncalibRecHitSoAView = BTLUncalibRecHitSoA::View;
-    using BTLUncalibRecHitSoAConstView = BTLUncalibRecHitSoA::ConstView;
+    using BTLBaseRecHitSoA = BTLBaseRecHitSoALayout<>;
+    using BTLBaseRecHitSoAView = BTLBaseRecHitSoA::View;
+    using BTLBaseRecHitSoAConstView = BTLBaseRecHitSoA::ConstView;
 
 
-    std::ostream& operator<<(std::ostream& out, BTLUncalibRecHitSoA::View::const_element const& btlrh);
+    std::ostream& operator<<(std::ostream& out, BTLBaseRecHitSoA::View::const_element const& btlrh);
 } // namespace btlrechit
-#endif  // DataFormats_FTLRecHitSoA_interface_BTLUncalibRecHitSoA_h
+#endif  // DataFormats_FTLRecHitSoA_interface_BTLBaseRecHitSoA_h

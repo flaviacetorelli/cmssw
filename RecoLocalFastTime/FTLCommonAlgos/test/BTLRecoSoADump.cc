@@ -11,7 +11,7 @@
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/ForwardDetId/interface/MTDDetId.h"
 #include "DataFormats/FTLRecHit/interface/FTLRecHitCollections.h"
-#include "DataFormats/FTLRecHitSoA/interface/BTLUncalibRecHitHostCollection.h" 
+#include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitHostCollection.h" 
 #include "DataFormats/FTLRecHitSoA/interface/BTLRecHitHostCollection.h" 
 
 class BTLRecoSoADump : public edm::one::EDAnalyzer<edm::one::SharedResources> {
@@ -30,7 +30,7 @@ private:
 
   edm::EDGetTokenT<FTLUncalibratedRecHitCollection> tok_BTL_uncreco;
   edm::EDGetTokenT<FTLRecHitCollection> tok_BTL_reco;
-  edm::EDGetTokenT<btlrechit::BTLUncalibRecHitHostCollection> tok_BTL_uncreco_SoA;
+  edm::EDGetTokenT<btlrechit::BTLBaseRecHitHostCollection> tok_BTL_basereco_SoA;
   edm::EDGetTokenT<btlrechit::BTLRecHitHostCollection> tok_BTL_reco_SoA;
 };
 
@@ -39,7 +39,7 @@ BTLRecoSoADump::BTLRecoSoADump(const edm::ParameterSet& iConfig)
 {
   tok_BTL_uncreco = consumes<FTLUncalibratedRecHitCollection>(edm::InputTag("mtdUncalibratedRecHits", "FTLBarrel"));	
   tok_BTL_reco = consumes<FTLRecHitCollection>(edm::InputTag("mtdRecHits", "FTLBarrel"));	
-  tok_BTL_uncreco_SoA = consumes<btlrechit::BTLUncalibRecHitHostCollection>(edm::InputTag("mtdUncalibratedRecHitsSoA"));	
+  tok_BTL_basereco_SoA = consumes<btlrechit::BTLBaseRecHitHostCollection>(edm::InputTag("mtdBaseratedRecHitsSoA"));	
   tok_BTL_reco_SoA = consumes<btlrechit::BTLRecHitHostCollection>(edm::InputTag("mtdRecHitsSoA"));	
 }
 
@@ -59,8 +59,8 @@ void BTLRecoSoADump::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   edm::Handle<FTLRecHitCollection> h_BTL_reco;
   iEvent.getByToken(tok_BTL_reco, h_BTL_reco);
 
-  edm::Handle<btlrechit::BTLUncalibRecHitHostCollection> h_BTL_uncreco_SoA;
-  iEvent.getByToken(tok_BTL_uncreco_SoA, h_BTL_uncreco_SoA);
+  edm::Handle<btlrechit::BTLBaseRecHitHostCollection> h_BTL_basereco_SoA;
+  iEvent.getByToken(tok_BTL_basereco_SoA, h_BTL_basereco_SoA);
 
   edm::Handle<btlrechit::BTLRecHitHostCollection> h_BTL_reco_SoA;
   iEvent.getByToken(tok_BTL_reco_SoA, h_BTL_reco_SoA);
@@ -85,11 +85,11 @@ void BTLRecoSoADump::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 
    } 
 
-  if (h_BTL_uncreco_SoA->view().metadata().size() > 0) {
-    std::cout << " BTL Uncalib RECO SoA collection: " << h_BTL_uncreco_SoA->view().metadata().size() << "\n" << std::endl;
+  if (h_BTL_basereco_SoA->view().metadata().size() > 0) {
+    std::cout << " BTL Base RECO SoA collection: " << h_BTL_basereco_SoA->view().metadata().size() << "\n" << std::endl;
 
-    for(int i=0; i<h_BTL_uncreco_SoA->view().metadata().size(); i++){
-      std::cout << h_BTL_uncreco_SoA->view()[i] << "\n" << std::endl;
+    for(int i=0; i<h_BTL_basereco_SoA->view().metadata().size(); i++){
+      std::cout << h_BTL_basereco_SoA->view()[i] << "\n" << std::endl;
     }
 
   }  // if ( h_BTL_reco_soa->size() > 0 )

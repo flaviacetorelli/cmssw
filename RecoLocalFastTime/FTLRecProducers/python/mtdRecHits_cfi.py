@@ -28,7 +28,7 @@ mtdRecHits = cms.EDProducer(
 
 from SimFastTiming.FastTimingCommon.mtdDigitizer_cfi import mtdDigitizer
 mtdRecHitsSoA = cms.EDProducer('btlrechit::BTLRecHitSoAProducer@alpaka',
-    uncalibrh = cms.InputTag("mtdUncalibratedRecHitsSoA"),
+    baserh = cms.InputTag("mtdBaseRecHitsSoA"),
     invLightSpeedLYSO = mtdDigitizer.barrelDigitizer.DeviceSimulation.LightCollectionSlope, # [ns/cm]
     thresholdToKeep = cms.double(1.), # [MeV]
     calibrationConstant = cms.double(1.)

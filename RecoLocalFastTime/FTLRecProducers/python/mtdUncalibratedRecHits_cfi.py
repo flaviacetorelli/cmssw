@@ -35,8 +35,8 @@ mtdUncalibratedRecHits = cms.EDProducer(
     EndcapHitsName = cms.string('FTLEndcap')
 )
 
-mtdUncalibratedRecHitsSoA = cms.EDProducer(
-    'btlrechit::BTLUncalibRecHitSoAProducer@alpaka',
+mtdBaseRecHitsSoA = cms.EDProducer(
+    'btlrechit::BTLBaseRecHitSoAProducer@alpaka',
     digi = cms.InputTag("mix", "FTLBarrelSoA"),
     npeToADC0 = cms.double(-22.5),
     npeToADC1 = cms.double(0.0348), # Npe to ADC counts conversion

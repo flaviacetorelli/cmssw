@@ -1,6 +1,6 @@
 #include <utility>
 
-#include "DataFormats/FTLRecHitSoA/interface/alpaka/BTLUncalibRecHitDeviceCollection.h"
+#include "DataFormats/FTLRecHitSoA/interface/alpaka/BTLBaseRecHitDeviceCollection.h"
 #include "DataFormats/FTLDigiSoA/interface/alpaka/BTLDigiDeviceCollection.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -15,16 +15,16 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
 
-#include "BTLUncalibRecHitSoAProducerAlgo.h"
+#include "BTLBaseRecHitSoAProducerAlgo.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   using namespace ::btlrechit;
 
-  class BTLUncalibRecHitSoAProducer : public global::EDProducer<> {
+  class BTLBaseRecHitSoAProducer : public global::EDProducer<> {
   public:
     // constructor	  
-    BTLUncalibRecHitSoAProducer(edm::ParameterSet const& config)
+    BTLBaseRecHitSoAProducer(edm::ParameterSet const& config)
         : EDProducer<>(config),
           digi_{consumes(config.getParameter<edm::InputTag>("digi"))},
           uncalibrh_{produces()},
@@ -49,10 +49,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
       btldigi::BTLDigiDeviceCollection const& digi = event.get(digi_); // this should match Claudio Class name
 
       // Allocate a new SoA for the uncalibrh jets. // same number of elements we have in input
-      BTLUncalibRecHitDeviceCollection uncalibrh(digi.view().metadata().size(), event.queue());
+      BTLBaseRecHitDeviceCollection uncalibrh(digi.view().metadata().size(), event.queue());
 
       // Apply the corrections and fill the new SoA. // these launch the kernel, and will run on gpu async
-      BTLUncalibRecHitSoAProducerAlgo::fromDigiToUncalib(
+      BTLBaseRecHitSoAProducerAlgo::fromDigiToBase(
           event.queue(), digi.view(), uncalibrh.view(), npeToADC0_, invADCPerMeV_);
 
       // Move the SoA with the uncalibrh jets into the Event.
@@ -61,7 +61,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   private:
     const device::EDGetToken<btldigi::BTLDigiDeviceCollection> digi_;
-    const device::EDPutToken<BTLUncalibRecHitDeviceCollection> uncalibrh_;
+    const device::EDPutToken<BTLBaseRecHitDeviceCollection> uncalibrh_;
     const double npeToADC0_;
     const double npeToADC1_;
     const double npePerMeV_;
@@ -71,4 +71,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit
 
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
-DEFINE_FWK_ALPAKA_MODULE(btlrechit::BTLUncalibRecHitSoAProducer);
+DEFINE_FWK_ALPAKA_MODULE(btlrechit::BTLBaseRecHitSoAProducer);

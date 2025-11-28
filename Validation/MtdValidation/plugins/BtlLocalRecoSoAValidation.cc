@@ -24,7 +24,7 @@
 #include "DataFormats/Common/interface/ValidHandle.h"
 #include "DataFormats/Math/interface/GeantUnits.h"
 #include "DataFormats/ForwardDetId/interface/BTLDetId.h"
-#include "DataFormats/FTLRecHitSoA/interface/BTLUncalibRecHitHostCollection.h" 
+#include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitHostCollection.h" 
 #include "DataFormats/FTLRecHitSoA/interface/BTLRecHitHostCollection.h" 
 
 
@@ -71,7 +71,7 @@ private:
   const bool uncalibRecHitsPlots_;
   const double hitMinAmplitude_;
 
-  edm::EDGetTokenT<btlrechit::BTLUncalibRecHitHostCollection> btlUncalibRecHitsSoAToken_;
+  edm::EDGetTokenT<btlrechit::BTLBaseRecHitHostCollection> btlBaseRecHitsSoAToken_;
   edm::EDGetTokenT<btlrechit::BTLRecHitHostCollection> btlRecHitsSoAToken_;
   edm::EDGetTokenT<CrossingFrame<PSimHit>> btlSimHitsToken_;
 
@@ -126,7 +126,7 @@ private:
   MonitorElement* meTPullvsEta_;
   MonitorElement* meUnmatchedRecHit_;
 
-  // --- UncalibratedRecHits histograms
+  // --- BaseratedRecHits histograms
 
   MonitorElement* meUncEneLVsX_;
   MonitorElement* meUncEneRVsX_;
@@ -156,13 +156,13 @@ BtlLocalRecoSoAValidation::BtlLocalRecoSoAValidation(const edm::ParameterSet& iC
     : folder_(iConfig.getParameter<std::string>("folder")),
       hitMinEnergy_(iConfig.getParameter<double>("HitMinimumEnergy")),
       optionalPlots_(iConfig.getParameter<bool>("optionalPlots")),
-      uncalibRecHitsPlots_(iConfig.getParameter<bool>("UncalibRecHitsPlots")),
+      uncalibRecHitsPlots_(iConfig.getParameter<bool>("BaseRecHitsPlots")),
       hitMinAmplitude_(iConfig.getParameter<double>("HitMinimumAmplitude")),
       mtdgeoToken_(esConsumes<MTDGeometry, MTDDigiGeometryRecord>()),
       mtdtopoToken_(esConsumes<MTDTopology, MTDTopologyRcd>()) {
       btlRecHitsSoAToken_ =  consumes<btlrechit::BTLRecHitHostCollection>(iConfig.getParameter<edm::InputTag>("recHitsSoATag"));
-      btlUncalibRecHitsSoAToken_ =
-	   consumes<btlrechit::BTLUncalibRecHitHostCollection>(iConfig.getParameter<edm::InputTag>("uncalibRecHitsSoATag"));
+      btlBaseRecHitsSoAToken_ =
+	   consumes<btlrechit::BTLBaseRecHitHostCollection>(iConfig.getParameter<edm::InputTag>("uncalibRecHitsSoATag"));
       btlSimHitsToken_ = consumes<CrossingFrame<PSimHit>>(iConfig.getParameter<edm::InputTag>("simHitsTag"));
 }
 
@@ -311,19 +311,19 @@ void BtlLocalRecoSoAValidation::analyze(const edm::Event& iEvent, const edm::Eve
   }
 
 
-  // --- Loop over the BTL Uncalibrated RECO hits
+  // --- Loop over the BTL Baserated RECO hits
   if (optionalPlots_) {
-    auto btlUncalibRecHitsSoAHandle = makeValid(iEvent.getHandle(btlUncalibRecHitsSoAToken_));
-    for(int i=0; i<btlUncalibRecHitsSoAHandle->view().metadata().size(); i++){
-    //for (const auto& uRecHit : *btlUncalibRecHitsHandle) {
-      auto uRecHit = btlUncalibRecHitsSoAHandle->view()[i];
+    auto btlBaseRecHitsSoAHandle = makeValid(iEvent.getHandle(btlBaseRecHitsSoAToken_));
+    for(int i=0; i<btlBaseRecHitsSoAHandle->view().metadata().size(); i++){
+    //for (const auto& uRecHit : *btlBaseRecHitsHandle) {
+      auto uRecHit = btlBaseRecHitsSoAHandle->view()[i];
       BTLDetId detId = uRecHit.detId();
 
       LogTrace("BtlLocalRecoSoAValidation") << "@URH detid " << detId.rawId() << " A " << uRecHit.ampR() << " "
                                          << uRecHit.ampL() << " T " << uRecHit.time1R() << " "
                                          << uRecHit.time1L();
 
-      // --- Skip UncalibratedRecHits not matched to SimHits
+      // --- Skip BaseratedRecHits not matched to SimHits
       if (m_btlSimHits.count(detId.rawId()) != 1)
         continue;
 
@@ -515,7 +515,7 @@ void BtlLocalRecoSoAValidation::bookHistograms(DQMStore::IBooker& ibook,
   meUnmatchedRecHit_ = ibook.book1D(
       "UnmatchedRecHit", "log10(#BTL crystals with rechits but no simhit);log10(#BTL rechits)", 80, -2., 6.);
 
-  // --- UncalibratedRecHits histograms
+  // --- BaseratedRecHits histograms
 
   if (optionalPlots_) {
     meUncEneLVsX_ = ibook.bookProfile("BTLUncEneLVsX",
@@ -591,11 +591,11 @@ void BtlLocalRecoSoAValidation::fillDescriptions(edm::ConfigurationDescriptions&
 
   desc.add<std::string>("folder", "MTD/BTL/LocalRecoSoA");
   desc.add<edm::InputTag>("recHitsSoATag", edm::InputTag("mtdRecHitsSoA"));
-  desc.add<edm::InputTag>("uncalibRecHitsSoATag", edm::InputTag("mtdUncalibratedRecHitsSoA"));
+  desc.add<edm::InputTag>("uncalibRecHitsSoATag", edm::InputTag("mtdBaseratedRecHitsSoA"));
   desc.add<edm::InputTag>("simHitsTag", edm::InputTag("mix", "g4SimHitsFastTimerHitsBarrel"));
   desc.add<double>("HitMinimumEnergy", 1.);  // [MeV]
   desc.add<bool>("optionalPlots", false);
-  desc.add<bool>("UncalibRecHitsPlots", false);
+  desc.add<bool>("BaseRecHitsPlots", false);
   desc.add<double>("HitMinimumAmplitude", 1.);  // [MeV]
 
   descriptions.add("btlLocalRecoSoAValid", desc);

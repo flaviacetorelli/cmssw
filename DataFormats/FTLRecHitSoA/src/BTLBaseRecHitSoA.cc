@@ -2,11 +2,11 @@
 
 #include <fmt/format.h>
 
-#include "DataFormats/FTLRecHitSoA/interface/BTLUncalibRecHitSoA.h"
+#include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitSoA.h"
 
 namespace btlrechit {
 
-  std::ostream& operator<<(std::ostream& out, BTLUncalibRecHitSoA::View::const_element const& btlrh) {
+  std::ostream& operator<<(std::ostream& out, BTLBaseRecHitSoA::View::const_element const& btlrh) {
     out << "BTL uncalib rechit SoA: "
 	<< " detID: "  << btlrh.detId().rawId()
         << ", row: " << btlrh.row()
