@@ -39,7 +39,7 @@ BTLRecoSoADump::BTLRecoSoADump(const edm::ParameterSet& iConfig)
 {
   tok_BTL_uncreco = consumes<FTLUncalibratedRecHitCollection>(edm::InputTag("mtdUncalibratedRecHits", "FTLBarrel"));
   tok_BTL_reco = consumes<FTLRecHitCollection>(edm::InputTag("mtdRecHits", "FTLBarrel"));
-  tok_BTL_basereco_SoA = consumes<btlrechit::BTLBaseRecHitHostCollection>(edm::InputTag("mtdBaseratedRecHitsSoA"));
+  tok_BTL_basereco_SoA = consumes<btlrechit::BTLBaseRecHitHostCollection>(edm::InputTag("mtdBaseRecHitsSoA"));
   tok_BTL_reco_SoA = consumes<btlrechit::BTLRecHitHostCollection>(edm::InputTag("mtdRecHitsSoA"));
 }
 
@@ -106,7 +106,8 @@ void BTLRecoSoADump::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
                 << "  rawID = " << mtdDetId.rawId() << std::endl;
 
       std::cout << "       energy = " << recHit.energy() << "  time = " << recHit.time()
-                << "  position = " << recHit.position() << "  time error = " << recHit.timeError() << std::endl;
+                << "  position = " << recHit.position() << " position error = " << recHit.positionError()
+		<< "  time error = " << recHit.timeError() << std::endl;
 
     }  // recHit loop
 
