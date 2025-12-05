@@ -41,7 +41,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         //!!!!!!! position error calculation to be added
 
         // -- if you have both sipm info and they are not saturated
-        if (entry.flagsR() == 0x1 && entry.flagsL() == 0x1 ) {
+        if (entry.flagsR() == 0x1 && entry.flagsL() == 0x1) {
           time1 = 0.5f * (entry.time1L() + entry.time1R());
           time2 = 0.5f * (entry.time2L() + entry.time2R());  // to be discussed
           position = 0.5f * c_LYSO_ * (entry.time1L() - entry.time1R());
@@ -49,7 +49,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
           energy = (entry.ampR() + entry.ampL()) / 2.;
           flag |= 0x3;
 
-	}
+        }
         // --- If only one SiPM has good not saturated signal
         else if (entry.flagsL() == 0x1 && (entry.time1R() == 0x3 || entry.time1R() == 0)) {
           time1 = entry.time1L();
