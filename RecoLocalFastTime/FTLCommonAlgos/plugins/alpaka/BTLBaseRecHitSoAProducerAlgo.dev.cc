@@ -1,4 +1,4 @@
-#define EDM_ML_DEBUG
+//#define EDM_ML_DEBUG
 #include <cstdio>
 
 #include <alpaka/alpaka.hpp>
@@ -14,6 +14,18 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   using namespace ::btlrechit;
+
+  ALPAKA_FN_ACC uint8_t rowFromId(uint32_t rawId)  { // NB working only with new geometry 
+          static constexpr uint32_t kBTLCrystalOffset = 0;
+	  static constexpr uint32_t kBTLCrystalMask = 0x1F;
+	  static constexpr uint32_t kCrystalsPerModuleV2 = 16;
+             
+	  int crys = ((rawId >> kBTLCrystalOffset) & kBTLCrystalMask);
+	  uint8_t row = crys % kCrystalsPerModuleV2;
+	  uint8_t column = crys / kCrystalsPerModuleV2; 
+	  return row;
+
+  }
 
   ALPAKA_FN_ACC float TcoarseTfineToTime(
       uint32_t rawId, uint8_t chID, uint8_t TACID, uint16_t tcoarse, uint16_t tfine, bool isT1) {
@@ -31,6 +43,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
   ALPAKA_FN_ACC uint32_t
   QfineToADC(uint32_t rawId, uint8_t chID, uint8_t TACID, uint16_t qfine, float time1, uint16_t timeEndQ) {
+      
     // qdc calibration parameters
     // (to be modified: these parameters are evaluated by channel and stored in parquet files)
     static constexpr float p0 = 49.542229;
@@ -51,14 +64,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         p8 * ti * ti * ti * ti * ti * ti * ti * ti + p9 * ti * ti * ti * ti * ti * ti * ti * ti * ti);
 
     const uint32_t adc = qfine - pedestal;
-
+    
     return adc;
   }
 
-  ALPAKA_FN_ACC uint8_t createFlag(uint32_t flag) {  // function to condensate info from raw in a quality flag
-    flag = 1;
-    return flag;
-  }
 
   ALPAKA_FN_ACC float timeWalkCorr(float amp) {
     float tdcLSB_ns = 0.020;
@@ -75,6 +84,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         const double npeToADC0_,
         const double invADCPerMeV_) const {  // when condformat for calib ready, add also tdc and qdc in inputs
 
+      static constexpr uint32_t adcBitSaturation_ = 1023;
       static constexpr float tclock = 6.25;
       // make a strided loop over the kernel grid, covering up to "size" elements
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) {
@@ -99,15 +109,23 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         auto ampR =
             QfineToADC(entry.rawId(), entry.chIDR(), entry.TACIDR(), entry.ChargeR(), time1R, entry.EOIcoarseR());
 
-        // flags for the usability of the channel uint_8
-        //auto flagsL = createFlag(entry.PrevTrigFL(),... ); // to be implemented WIP
-        //auto flagsR = createFlag(entry.PrevTrigFR(),... );
+	uint8_t row = rowFromId(entry.rawId()); 
+
+	// flags for the usability of the channel uint_8: atm 2 bit are used
+	//  first bit is channel has signal (1) or not (0)
+	//  second bit channel was saturated (1) or not (0)
         uint8_t flagsL = 0;
         uint8_t flagsR = 0;
+       
+	if (ampL > 0)   flagsL |= 0x1;
+	if (ampL == adcBitSaturation_)  flagsL |= (0x1 << 1); 	
+        if (ampR > 0) flagsR |= 0x1; 
+	if (ampR == adcBitSaturation_) flagsR |= (0x1 << 1);
 
-        // detId from rawId
-        const DetId detId(entry.rawId());
-        // convert from cloack units to ps
+	// detId from rawId
+        DetId detId(entry.rawId());
+
+	// convert from clock units to ps
         time1R *= tclock;
         time1L *= tclock;
         time2R *= tclock;
@@ -143,10 +161,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         printf("Energy in MeV L,R (%f, %f) \n", energyL, energyR);
 #endif
 
-        // fill the uncalib rechit
+
+        // fill the base rechit
         output[i] = {
             detId,
-            1,           // just a placeholder, to be fixed
+            row, 
             time1Rcorr,  // in ns
             time2Rcorr,
             energyR,  // energy

@@ -3,7 +3,7 @@
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
-#include "DataFormats/ForwardDetId/interface/MTDDetId.h"
+//#include "DataFormats/ForwardDetId/interface/BTLDetId.h"
 #include "DataFormats/FTLRecHitSoA/interface/BTLBaseRecHitSoA.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {

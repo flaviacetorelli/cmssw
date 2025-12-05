@@ -1,4 +1,4 @@
-#define EDM_ML_DEBUG
+//#define EDM_ML_DEBUG
 #include <alpaka/alpaka.hpp>
 
 #include "RecoLocalFastTime/FTLCommonAlgos/interface/MTDTimeCalib.h"
@@ -6,6 +6,9 @@
 #include "DataFormats/FTLRecHitSoA/interface/BTLRecHitSoA.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
+
+#include "RecoLocalFastTime/Records/interface/MTDTimeCalibRecord.h"
+#include "RecoLocalFastTime/FTLCommonAlgos/interface/MTDTimeCalib.h"
 
 #include "BTLRecHitSoAProducerAlgo.h"
 
@@ -26,38 +29,40 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
 
       for (int32_t i : cms::alpakatools::uniform_elements(acc, input.metadata().size())) {
         auto entry = input[i];
-        float time1 = -9999;
-        float time2 = -9999;
-        float position = -9999;
-        float position_error = -9999;
-        float time_error = -9999;
-        float energy = -9999;
+        float time1 = 0;
+        float time2 = 0;
+        float position = -1.;
+        float position_error = -1.;
+        float time_error = 0;
+        float energy = 0;
         uint8_t flag = 0;
 
         //!!!!!!! time error calculation to be added
         //!!!!!!! position error calculation to be added
 
-        // --- If available, reconstruct the amplitude and time of the first SiPM
-        if (entry.time1L() < 0 && entry.time1R() > 0) {
-          time1 = entry.time1R();
-          time2 = entry.time2R();
-          energy = entry.ampR();
-          flag |= 0x1;
-        }
-        // --- If available, reconstruct the amplitude and time of the second SiPM
-        else if (entry.time1L() > 0 && entry.time1R() < 0) {
+        // -- if you have both sipm info and they are not saturated
+        if (entry.flagsR() == 0x1 && entry.flagsL() == 0x1 ) {
+          time1 = 0.5f * (entry.time1L() + entry.time1R());
+          time2 = 0.5f * (entry.time2L() + entry.time2R());  // to be discussed
+          position = 0.5f * c_LYSO_ * (entry.time1L() - entry.time1R());
+          position_error = 0.6;  // as in the std btl uncalibrated hit producer
+          energy = (entry.ampR() + entry.ampL()) / 2.;
+          flag |= 0x3;
+
+	}
+        // --- If only one SiPM has good not saturated signal
+        else if (entry.flagsL() == 0x1 && (entry.time1R() == 0x3 || entry.time1R() == 0)) {
           time1 = entry.time1L();
           time2 = entry.time2L();
           energy = entry.ampL();
           flag |= (0x1 << 1);
         }
-        // -- if you have both sipm info
-        else if (entry.time1L() > 0 && entry.time1R() > 0) {
-          time1 = 0.5f * (entry.time1L() + entry.time1R());
-          time2 = 0.5f * (entry.time2L() + entry.time2R());  // to be discussed
-          position = 0.5f * c_LYSO_ * (entry.time1L() - entry.time1R());
-          position_error = 0.;  //to be implemented
-          energy = (entry.ampR() + entry.ampL()) / 2.;
+
+        else if (entry.flagsR() == 0x1 && (entry.flagsL() == 0x3 || entry.flagsR() == 0)) {
+          time1 = entry.time1R();
+          time2 = entry.time2R();
+          energy = entry.ampR();
+          flag |= 0x1;
         }
 
         // energy calibration
@@ -69,8 +74,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
         time_error = timeResolutionInNs(energy);
 
         // Now fill flags
-        // all rechits from the digitizer are "good" at present, good is 1, bad is 0
-        if (energy > thresholdToKeep_) {
+        // good is 1--> 2 channels && over threshold, bad is 0
+        if (energy > thresholdToKeep_ && flag == 0x3) {
           flag = 1;
         } else {
           flag = 0;
