@@ -9,6 +9,8 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
 
+#include "DataFormats/ForwardDetId/interface/BTLDetId.h"
+
 #include "BTLBaseRecHitSoAProducerAlgo.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
@@ -16,12 +18,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::btlrechit {
   using namespace ::btlrechit;
 
   ALPAKA_FN_ACC uint8_t rowFromId(uint32_t rawId) {  // NB working only with new geometry
-    static constexpr uint32_t kBTLCrystalOffset = 0;
-    static constexpr uint32_t kBTLCrystalMask = 0x1F;
-    static constexpr uint32_t kCrystalsPerModuleV2 = 16;
-
-    int crys = ((rawId >> kBTLCrystalOffset) & kBTLCrystalMask);
-    uint8_t row = crys % kCrystalsPerModuleV2;
+    int crys = ((rawId >> BTLDetId::kBTLCrystalOffset) & BTLDetId::kBTLCrystalMask);
+    uint8_t row = crys % BTLDetId::kCrystalsPerModuleV2;
     return row;
   }
 
